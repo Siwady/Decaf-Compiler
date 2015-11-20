@@ -1,0 +1,8 @@
+called: g++
+	/home/esiwady/Documents/Compilers2-Project
+	g++
+	-c
+	-o
+	tree.o
+	tree.cpp
+

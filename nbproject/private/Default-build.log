@@ -1,0 +1,6 @@
+g++ -c -o tree.o tree.cpp
+tree.cpp: In member function ‘virtual void PrintStatement::execute()’:
+tree.cpp:78:32: error: request for member ‘c_str’ in ‘result.VValue::StringValue()’, which is of non-class type ‘char*’
+    printf(result.StringValue().c_str());
+                                ^
+make: *** [tree.o] Error 1
