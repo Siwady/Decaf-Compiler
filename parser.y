@@ -36,6 +36,7 @@ DeclList * declarationList;
     IdList *idlist_t;
     StatementList *st_list_t;
     Statement *st_t;
+    DeclItemList *item_l;
 }
 
 %token<num_t> T_INT_CONSTANT 
@@ -47,7 +48,6 @@ DeclList * declarationList;
 %token T_ELSE T_FOR T_IF T_WHILE
 %token T_BOOL T_INT
 %token T_FALSE T_TRUE
-%type<idlist_t> id_listP
 %type<decl_list> opt_declarations declaration_list
 %type<decl> declaration
 %type<mtd_list> opt_methods method_list
@@ -56,12 +56,13 @@ DeclList * declarationList;
 %type<prm_list> params param_list
 %type<param_t> param
 %type<type_t> type
-
-%type<expr_t> constant bool_constant opt_expr expr argument expr_a expr_eq expr_re expr_bit expr_md expr_ar expr_fa expr_ne expr_neg term method_call_expr opt_arr
+%type<num_t> arr_size
+%type<expr_t> constant bool_constant opt_expr expr argument expr_a expr_eq expr_re expr_bit expr_md expr_ar expr_fa expr_ne expr_neg term method_call_expr opt_arr variable
 
 %type<expr_list_t> arguments_list opt_expr_list expr_list 
 %type<st_list_t>  assign_list statement_list opt_else
 %type<st_t> statement  assign method_call_statement 
+%type<item_l> id_listP
 
 %%
 
@@ -128,26 +129,47 @@ declaration:type id_listP ';'	{
 									$$=new Declaration($1,*$2,0);
 								}
 	       |type T_ID  '='  constant ';'{
-	       									IdList *ids=new IdList();
+	       									DeclItemList *ids=new DeclItemList();
 	       									string id=$2;
-	       									ids->push_back(id);
+	       									DeclItem *item=new DeclItem(id);
+	       									ids->push_back(item);
 	       									$$=new Declaration($1,*ids,$4);
-	       								}
+	       								}			
 
 ;
 
-id_listP: id_listP ',' T_ID { 
-								$$=$1; 
-								string id=$3;
-								$$->push_back(id);
-							}
-          | T_ID	{
-          				string id=$1;
-          				$$=new IdList();
-          				$$->push_back(id);
-          			}
+id_listP: id_listP ',' T_ID arr_size { 
+										$$=$1; 
+										string id=$3;
+										DeclItem* item;
+										if($4!=0){
+											item=new DeclItem(id,$4);
+										}else{
+											item=new DeclItem(id);
+										}
+										
+										$$->push_back(item);
+									}
+          | T_ID arr_size			{
+						  				string id=$1;
+						  				
+						  				DeclItem* item;
+										if($2!=0){
+											item=new DeclItem(id,$2);
+										}else{
+											item=new DeclItem(id);
+										}
+										
+						  				$$=new DeclItemList();
+						  				$$->push_back(item);
+						  			}
+;
+
+arr_size: '[' T_INT_CONSTANT ']'  {$$=$2;}
+		| {$$=0;}
 
 ;
+
 type: T_INT  {$$=INT;}
      |T_BOOL {$$=BOOLEAN;}
 
@@ -167,8 +189,7 @@ statement: assign ';'													{$$=$1;}
 	   | T_BREAK ';'													{$$=new BreakStatement();}
 	   | T_CONTINUE ';'													{$$=new ContinueStatement();}
 	   | T_PRINT arguments_list ';'										{$$=new PrintStatement(*$2);}
-	   | T_READ id_listP 	';'											{$$=new ReadStatement(*$2);}
-
+		// FALTA EL READ
 ;
 
 opt_expr: expr	{$$=$1;}
@@ -300,13 +321,21 @@ expr_neg: '-' term		{$$=new NegativeExpr($2);}
 ;
 
 term: constant			{$$=$1;}
-	| T_ID 				{
-							string id = $1;
-                            free($1);
-                            $$ = new IdExpr(id);
-                        }
 	| method_call_expr	{$$=$1;}
 	| '(' expr ')'		{$$=$2;}
+	| variable 		{$$=$1;}
+;
+
+variable:T_ID  { 
+				string id = $1;
+				free($1);
+				$$ = new IdExpr(id);
+			 }
+		|T_ID '[' expr ']' {
+							string id = $1;
+							free($1);
+							$$ = new ArrayExpr(id,$3);
+						  } 
 ;
 
 constant: T_INT_CONSTANT	{$$ = new IntExpr($1); }

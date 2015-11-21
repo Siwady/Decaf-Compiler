@@ -104,8 +104,9 @@ union YYSTYPE
     IdList *idlist_t;
     StatementList *st_list_t;
     Statement *st_t;
+    DeclItemList *item_l;
 
-#line 109 "tokens.h" /* yacc.c:1909  */
+#line 110 "tokens.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

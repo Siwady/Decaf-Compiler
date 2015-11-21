@@ -3,6 +3,11 @@
 
 #include <string>
 #include <stdio.h>
+#include <cstdio>
+#include <stdlib.h>
+#include <iostream>
+#include <map>
+#include <cstring>
 #include <list>
 #include <map>
 
@@ -11,44 +16,98 @@ using namespace std;
 
 typedef list<string> IdList;
 
-enum VarType {INT, BOOLEAN ,STRINGS,CHARACTER,FUNCTION, ARRAY};
-enum MethodType {M_VOID, M_INT, M_BOOLEAN};
-
-struct VValue
-{
-	int IntValue()
-	{
-		return u.ivalue;
-	}
-	
-	bool BoolValue()
-	{
-		if(type==INT)
-		{
-			return true;
-		}
-		return u.bvalue;
-	}
-	char* StringValue()
-	{
-		return u.svalue;
-	}
-	char CharValue()
-	{
-		return u.cvalue;
-	}
-	
-	VarType type;
-	
-	union
-	{
-		int ivalue;
-		bool bvalue;
-		char* svalue;
-		char  cvalue;
-	}u;
+enum VarType {
+    INT, BOOLEAN, STRINGS, CHARACTER, FUNCTION, ARRAY
 };
 
+enum MethodType {
+    M_VOID, M_INT, M_BOOLEAN
+};
+
+struct VValue {
+
+    int IntValue() {
+        
+        return u.ivalue;
+    }
+
+    bool BoolValue() {
+        if (type == INT) {
+            return true;
+        }
+        
+        return u.bvalue;
+    }
+
+    char* StringValue() {
+        return u.svalue;
+    }
+
+    char CharValue() {
+        return u.cvalue;
+    }
+
+    void setIntArrayValue(int pos, int val) {
+        if(pos>=ArraySize){
+            printf("Out of range.\n");
+            exit(0);
+        }
+        u.a_ivalue[pos]=val;
+    }
+
+    void setBoolArrayValue(int pos, bool val) {
+        if(pos>=ArraySize){
+            printf("Out of range.\n");
+            exit(0);
+        }
+        u.a_bvalue[pos]=val;
+    }
+    int getIntArrayValue() {
+        if(Pos>=ArraySize){
+            printf("Out of range.\n");
+            exit(0);
+        }
+        return u.a_ivalue[Pos];
+    }
+
+    bool getBoolArrayValue() {
+        if(Pos>=ArraySize){
+            printf("Out of range.\n");
+            exit(0);
+        }
+        return u.a_bvalue[Pos];
+    }
+
+    VarType type;
+    bool isArray;
+    int ArraySize;
+    int Pos;
+
+    union {
+        int ivalue;
+        bool bvalue;
+        char* svalue;
+        char cvalue;
+
+        int* a_ivalue;
+        bool* a_bvalue;
+    } u;
+};
+class DeclItem {
+public:
+
+    DeclItem(string id) {
+        this-> id = id;
+    }
+    
+    DeclItem(string id, int dimension) {
+        this-> id = id;
+        this->dimension = dimension;
+    }
+    string id;
+    int dimension;
+};
+typedef list<DeclItem*> DeclItemList;
 
 class Expr {
 public:
@@ -57,222 +116,273 @@ public:
 
 typedef list<Expr*> ExprList;
 
-class BinaryExpr: public Expr {
+class BinaryExpr : public Expr {
 public:
+
     BinaryExpr(Expr *expr1, Expr *expr2) {
         this->expr1 = expr1;
         this->expr2 = expr2;
     }
-    
+
     Expr *expr1;
     Expr *expr2;
 };
 
-
-class LessThanExpr: public BinaryExpr {
+class LessThanExpr : public BinaryExpr {
 public:
-    LessThanExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
 
-class GreaterThanExpr: public BinaryExpr {
-public:
-    GreaterThanExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class LessThanEqualExpr: public BinaryExpr {
-public:
-    LessThanEqualExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class GreaterThanEqualExpr: public BinaryExpr {
-public:
-    GreaterThanEqualExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class NotEqualExpr: public BinaryExpr {
-public:
-    NotEqualExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-
-class EqualExpr: public BinaryExpr {
-public:
-    EqualExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class AddExpr: public BinaryExpr {
-public:
-    AddExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class SubExpr: public BinaryExpr {
-public:
-    SubExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class MultExpr: public BinaryExpr {
-public:
-    MultExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class DivExpr: public BinaryExpr {
-public:
-    DivExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
-    VValue evaluate();
-};
-
-class NegativeExpr: public Expr {
-public:
-    NegativeExpr(Expr *expr){
-    	this->expr=expr;
+    LessThanExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
     }
-	        
+
     VValue evaluate();
-	Expr *expr;
 };
 
-class NotExpr: public Expr {
+class GreaterThanExpr : public BinaryExpr {
 public:
-    NotExpr(Expr *expr){
-    	this->expr=expr;
+
+    GreaterThanExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
     }
-	        
-    VValue evaluate();
-	Expr *expr;
-};
 
-class OrExpr: public BinaryExpr {
-public:
-    OrExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
     VValue evaluate();
 };
 
-class AndExpr: public BinaryExpr {
+class LessThanEqualExpr : public BinaryExpr {
 public:
-    AndExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
+
+    LessThanEqualExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
     VValue evaluate();
 };
 
-class ShiftLeftExpr: public BinaryExpr {
+class GreaterThanEqualExpr : public BinaryExpr {
 public:
-    ShiftLeftExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
+
+    GreaterThanEqualExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
     VValue evaluate();
 };
 
-class RotExpr: public BinaryExpr {
+class NotEqualExpr : public BinaryExpr {
 public:
-    RotExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
+
+    NotEqualExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
     VValue evaluate();
 };
 
-class ModExpr: public BinaryExpr {
+class EqualExpr : public BinaryExpr {
 public:
-    ModExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
+
+    EqualExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
     VValue evaluate();
 };
 
-class ShiftRightExpr: public BinaryExpr {
+class AddExpr : public BinaryExpr {
 public:
-    ShiftRightExpr(Expr *expr1, Expr *expr2): BinaryExpr(expr1, expr2) {}
-    
+
+    AddExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
     VValue evaluate();
 };
 
-
-class IntExpr: public Expr {
+class SubExpr : public BinaryExpr {
 public:
-    IntExpr(int value){ 
-							this->value.type=INT;
-							this->value.u.ivalue = value;
-						}
-    						
-    VValue evaluate(){ return value;}
-    
+
+    SubExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class MultExpr : public BinaryExpr {
+public:
+
+    MultExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class DivExpr : public BinaryExpr {
+public:
+
+    DivExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class NegativeExpr : public Expr {
+public:
+
+    NegativeExpr(Expr *expr) {
+        this->expr = expr;
+    }
+
+    VValue evaluate();
+    Expr *expr;
+};
+
+class NotExpr : public Expr {
+public:
+
+    NotExpr(Expr *expr) {
+        this->expr = expr;
+    }
+
+    VValue evaluate();
+    Expr *expr;
+};
+
+class OrExpr : public BinaryExpr {
+public:
+
+    OrExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class AndExpr : public BinaryExpr {
+public:
+
+    AndExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class ShiftLeftExpr : public BinaryExpr {
+public:
+
+    ShiftLeftExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class RotExpr : public BinaryExpr {
+public:
+
+    RotExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class ModExpr : public BinaryExpr {
+public:
+
+    ModExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class ShiftRightExpr : public BinaryExpr {
+public:
+
+    ShiftRightExpr(Expr *expr1, Expr *expr2) : BinaryExpr(expr1, expr2) {
+    }
+
+    VValue evaluate();
+};
+
+class IntExpr : public Expr {
+public:
+
+    IntExpr(int value) {
+        this->value.type = INT;
+        this->value.u.ivalue = value;
+    }
+
+    VValue evaluate() {
+        return value;
+    }
+
     VValue value;
 };
 
-class BoolExpr: public Expr {
+class BoolExpr : public Expr {
 public:
-    BoolExpr(bool value){ 
-							this->value.type=BOOLEAN;
-							this->value.u.bvalue = value;
-						}
-    						
-    VValue evaluate(){ return value;}
-    
+
+    BoolExpr(bool value) {
+        this->value.type = BOOLEAN;
+        this->value.u.bvalue = value;
+    }
+
+    VValue evaluate() {
+        return value;
+    }
+
     VValue value;
 };
 
-class IdExpr: public Expr {
+class IdExpr : public Expr {
 public:
-    IdExpr(string id) { this->id=id; }
+
+    IdExpr(string id) {
+        this->id = id;
+    }
     VValue evaluate();
-    
+
     string id;
 };
 
-class IdArrayExpr: public Expr {
+class ArrayExpr : public Expr {
 public:
-    IdArrayExpr(string id,int dim) { this->id=id; this->dim=dim;}
+
+    ArrayExpr(string id, Expr* dim) {
+        this->id = id;
+        this->dim = dim;
+    }
     VValue evaluate();
-    
+
     string id;
-    int dim;
+    Expr* dim;
 };
 
-class StrExpr: public Expr {
+class StrExpr : public Expr {
 public:
-    StrExpr(string id) { 
-    						this->val = id; 	
-    					}
+
+    StrExpr(string id) {
+        this->val = id;
+    }
     VValue evaluate();
-    
+
     string val;
 };
 
-class CharExpr: public Expr {
+class CharExpr : public Expr {
 public:
-    CharExpr(char value) { 
-    						this->value.type=CHARACTER;
-							this->value.u.cvalue = value; 	
-    					}
-    VValue evaluate(){return value;}
-    
+
+    CharExpr(char value) {
+        this->value.type = CHARACTER;
+        this->value.u.cvalue = value;
+    }
+
+    VValue evaluate() {
+        return value;
+    }
+
     VValue value;
 };
 
-class MethodExpr: public Expr {
+class MethodExpr : public Expr {
 public:
-    MethodExpr(string id,ExprList ls) { 
-    						this->id = id; 
-    						this->exprs=ls;
-    					  }
+
+    MethodExpr(string id, ExprList ls) {
+        this->id = id;
+        this->exprs = ls;
+    }
     VValue evaluate();
-    
+
     string id;
     ExprList exprs;
 };
@@ -299,132 +409,183 @@ public:
 
 typedef list<Statement*> StatementList;
 
-class BlockStatement: public Statement {
+class BlockStatement : public Statement {
 public:
-    BlockStatement(list<Statement *> stList) { this->stList = stList; }
+
+    BlockStatement(list<Statement *> stList) {
+        this->stList = stList;
+    }
     void execute();
-    StatementKind getKind() { return BLOCK_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return BLOCK_STATEMENT;
+    }
+
     list<Statement *> stList;
 };
 
-
-class ReadStatement: public Statement {
+class ReadStatement : public Statement {
 public:
-    ReadStatement(IdList ids) { this->ids = ids; }
+
+    ReadStatement(IdList ids) {
+        this->ids = ids;
+    }
     void execute();
-    StatementKind getKind() { return READ_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return READ_STATEMENT;
+    }
+
     IdList ids;
 };
 
-class ReturnStatement: public Statement {
+class ReturnStatement : public Statement {
 public:
-    ReturnStatement(Expr* expr) { this->expr = expr; }
+
+    ReturnStatement(Expr* expr) {
+        this->expr = expr;
+    }
     void execute();
-    StatementKind getKind() { return RETURN_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return RETURN_STATEMENT;
+    }
+
     Expr* expr;
 };
 
-
-class ContinueStatement: public Statement {
+class ContinueStatement : public Statement {
 public:
-    ContinueStatement() { 
+
+    ContinueStatement() {
     }
     void execute();
-    StatementKind getKind() { return CONTINUE_STATEMENT; }
+
+    StatementKind getKind() {
+        return CONTINUE_STATEMENT;
+    }
 };
 
-class BreakStatement: public Statement {
+class BreakStatement : public Statement {
 public:
-    BreakStatement() { 
+
+    BreakStatement() {
     }
     void execute();
-    StatementKind getKind() { return BREAK_STATEMENT; }
+
+    StatementKind getKind() {
+        return BREAK_STATEMENT;
+    }
 };
 
-
-class MethodStatement: public Statement {
+class MethodStatement : public Statement {
 public:
-    MethodStatement(string id,ExprList ls) { 
-    						this->id = id; 
-    						this->exprs=ls;
-    					  }
+
+    MethodStatement(string id, ExprList ls) {
+        this->id = id;
+        this->exprs = ls;
+    }
     void execute();
-    StatementKind getKind() { return METHOD_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return METHOD_STATEMENT;
+    }
+
     string id;
     ExprList exprs;
 };
-class PrintStatement: public Statement {
+
+class PrintStatement : public Statement {
 public:
-    PrintStatement(ExprList expr) { this->expr = expr; }
+
+    PrintStatement(ExprList expr) {
+        this->expr = expr;
+    }
     void execute();
-    StatementKind getKind() { return PRINT_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return PRINT_STATEMENT;
+    }
+
     ExprList expr;
 };
 
-class AssignStatement: public Statement {
+class AssignStatement : public Statement {
 public:
-    AssignStatement(string id,Expr* dim, Expr *expr) { 
+
+    AssignStatement(string id, Expr* dim, Expr *expr) {
         this->id = id;
-        this->dim=dim;
-        this->expr = expr;  
+        this->dim = dim;
+        this->expr = expr;
     }
     void execute();
-    StatementKind getKind() { return ASSIGN_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return ASSIGN_STATEMENT;
+    }
+
     string id;
     Expr *expr;
     Expr *dim;
 };
 
-class IfStatement: public Statement {
+class IfStatement : public Statement {
 public:
-    IfStatement(Expr *cond, list<Statement *>trueBlock, list<Statement *>falseBlock) { 
-        this->cond = cond; 
+
+    IfStatement(Expr *cond, list<Statement *>trueBlock, list<Statement *>falseBlock) {
+        this->cond = cond;
         this->trueBlock = trueBlock;
         this->falseBlock = falseBlock;
     }
     void execute();
-    StatementKind getKind() { return IF_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return IF_STATEMENT;
+    }
+
     Expr *cond;
     list<Statement *>trueBlock;
     list<Statement *>falseBlock;
 };
 
-class WhileStatement: public Statement {
+class WhileStatement : public Statement {
 public:
-    WhileStatement(Expr *cond, list<Statement *>statementBlock) { 
-        this->cond = cond; 
+
+    WhileStatement(Expr *cond, list<Statement *>statementBlock) {
+        this->cond = cond;
         this->statementBlock = statementBlock;
     }
     void execute();
-    StatementKind getKind() { return WHILE_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return WHILE_STATEMENT;
+    }
+
     Expr *cond;
     list<Statement *>statementBlock;
 };
 
-class ForStatement: public Statement {
+class ForStatement : public Statement {
 public:
-    ForStatement(StatementList assignStatement, Expr *cond,StatementList finalAssignStatement,  list<Statement *>	statementBlock) { 
-        this->assignStatement=assignStatement;
-        this->cond = cond; 
-        this->finalAssignStatement=finalAssignStatement;
+
+    ForStatement(StatementList assignStatement, Expr *cond, StatementList finalAssignStatement, list<Statement *> statementBlock) {
+        this->assignStatement = assignStatement;
+        this->cond = cond;
+        this->finalAssignStatement = finalAssignStatement;
         this->statementBlock = statementBlock;
     }
     void execute();
-    StatementKind getKind() { return FOR_STATEMENT; }
-    
+
+    StatementKind getKind() {
+        return FOR_STATEMENT;
+    }
+
     StatementList assignStatement;
     Expr *cond;
     StatementList finalAssignStatement;
     list<Statement *> statementBlock;
 };
+
 /*class ArrayValue{
 public:
     Array(int dim,VarType type) { 
@@ -437,28 +598,27 @@ public:
     VarType type;
     list<VValue>
 };
-*/
-class Declaration{
+ */
+class Declaration {
 public:
-    Declaration(VarType type,IdList ids,Expr *value) { 
-        this->ids = ids; 
-        this->type=type;
-        this->value=value;
+
+    Declaration(VarType type, DeclItemList ids, Expr *value) {
+        this->ids = ids;
+        this->type = type;
+        this->value = value;
     }
     void execute();
-    IdList ids;
+    DeclItemList ids;
     VarType type;
     Expr* value;
 };
 
-
-
-
-class Param{
+class Param {
 public:
-    Param(VarType type,string id) { 
-        this->id = id; 
-        this->type=type;
+
+    Param(VarType type, string id) {
+        this->id = id;
+        this->type = type;
     }
     void execute();
     string id;
@@ -467,14 +627,16 @@ public:
 
 typedef list<Param*> ParamList;
 typedef list<Declaration*> DeclList;
-class Method{
+
+class Method {
 public:
-    Method(MethodType type,string id,ParamList params,DeclList declare,list<Statement*> statementBlock) { 
-        this->id = id; 
-        this->type=type;
-        this->statementBlock=statementBlock;
-        this->params=params;
-        this->declare=declare;
+
+    Method(MethodType type, string id, ParamList params, DeclList declare, list<Statement*> statementBlock) {
+        this->id = id;
+        this->type = type;
+        this->statementBlock = statementBlock;
+        this->params = params;
+        this->declare = declare;
     }
     void execute();
     string id;
@@ -485,11 +647,12 @@ public:
     map<string, VValue> LTable;
 };
 
-class MainMethod{
+class MainMethod {
 public:
-    MainMethod(DeclList declare,list<Statement*> statementBlock) { 
-        this->statementBlock=statementBlock;
-        this->declare=declare;
+
+    MainMethod(DeclList declare, list<Statement*> statementBlock) {
+        this->statementBlock = statementBlock;
+        this->declare = declare;
     }
     void execute();
     list<Statement*> statementBlock;
