@@ -13,11 +13,9 @@ void yyerror(const char *str)
 }
 
 #define YYERROR_VERBOSE 1
-MainMethod*    main_method;
-MethodList *methods;
-DeclList * declarationList;
+Program *program;
 %}
-
+%expect 44
 %union {
     char *id_t;
     char *string_t;
@@ -27,7 +25,6 @@ DeclList * declarationList;
     Declaration *decl;
     MethodList * mtd_list;
     Method *method_t;
-    MainMethod *main_t;
     ParamList * prm_list;
     Param * param_t;
     VarType type_t;
@@ -44,7 +41,7 @@ DeclList * declarationList;
 %token<string_t> T_STRING_CONSTANT
 %token<id_t> T_ID 
 %token T_LEFT_BIT T_RIGHT_BIT T_LESS_EQUAL T_GREATER_EQUAL T_EQUAL T_NOT_EQUAL T_AND T_OR
-%token T_BREAK T_PRINT T_READ T_CONTINUE T_CLASS T_EXTENDS T_NEW T_NULL T_RETURN T_ROT T_VOID T_MAIN
+%token T_BREAK T_PRINT T_READ T_CONTINUE T_CLASS T_EXTENDS T_NEW T_NULL T_RETURN T_ROT T_VOID
 %token T_ELSE T_FOR T_IF T_WHILE
 %token T_BOOL T_INT
 %token T_FALSE T_TRUE
@@ -52,7 +49,6 @@ DeclList * declarationList;
 %type<decl> declaration
 %type<mtd_list> opt_methods method_list
 %type<method_t> method
-%type<main_t> main_method
 %type<prm_list> params param_list
 %type<param_t> param
 %type<type_t> type
@@ -66,7 +62,7 @@ DeclList * declarationList;
 
 %%
 
-program: T_CLASS T_ID '{' opt_declarations opt_methods main_method opt_methods '}'{declarationList=$4; methods=$7; main_method=$6;}
+program: T_CLASS T_ID '{' opt_declarations opt_methods'}'{ program=new Program($4,$5);}
 
 						  //FALTA
 
@@ -87,11 +83,8 @@ method:type T_ID '(' params ')' '{' opt_declarations statement_list '}'	{
 																			{	
 																				$$=new Method(M_BOOLEAN,$2,*$4,*$7,*$8);
 																			}												
-																		}//FALTA
-
-;
-
-main_method:T_VOID T_MAIN '(' ')' '{' opt_declarations statement_list '}'{ $$=new MainMethod(*$6,*$7);}
+																		}
+	  | T_VOID T_ID '(' ')' '{' opt_declarations statement_list '}'{ $$=new Method(M_VOID,$2,*(new ParamList()),*$6,*$7);}
 
 ;
 

@@ -586,19 +586,6 @@ public:
     list<Statement *> statementBlock;
 };
 
-/*class ArrayValue{
-public:
-    Array(int dim,VarType type) { 
-        this->ids = ids; 
-        this->type=type;
-        this->value=value;
-    }
-    void execute();
-    int dim;
-    VarType type;
-    list<VValue>
-};
- */
 class Declaration {
 public:
 
@@ -646,24 +633,25 @@ public:
     DeclList declare;
     map<string, VValue> LTable;
 };
+typedef list<Method*> MethodList;
 
-class MainMethod {
+
+class Program {
 public:
-
-    MainMethod(DeclList declare, list<Statement*> statementBlock) {
-        this->statementBlock = statementBlock;
-        this->declare = declare;
+    Program(DeclList *variables,MethodList *methods){
+        this->Variables = variables;
+        this->Methods = methods;
     }
-    void execute();
-    list<Statement*> statementBlock;
-    DeclList declare;
-    map<string, VValue> LTable;
+    void Initialize();
+    void RunMain();
+    MethodList *Methods;
+    DeclList *Variables;
 };
 
 
 
 
-typedef list<Method*> MethodList;
+
 typedef list<AssignStatement*> AssignList;
 
 extern map<string, VValue> sTable;

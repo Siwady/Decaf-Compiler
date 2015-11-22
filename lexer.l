@@ -5,6 +5,7 @@
 #include <cstring>
 #include "tree.h"
 #include "tokens.h"
+#include <string>
 
 int line=1;
 %}
@@ -13,6 +14,7 @@ ID                  [A-Za-z_][A-Za-z_0-9]*
 NUMBER              [0-9][0-9]*
 STRING              \"(\\.|[^\\"])*\"
 CHARACTER           "'"[^\\]"'"
+HEXADECIMAL         ([0-9A-Fa-f])+
 ESPECIAL_N          "'"(\\n)"'"
 ESPECIAL_A          "'"(\\a)"'"
 ESPECIAL_R          "'"(\\r)"'"
@@ -20,7 +22,8 @@ ESPECIAL_T          "'"(\\t)"'"
 ESPECIAL_P          "'"(\\\\)"'"
 
 %x str
-%x ch
+%x hex
+
 %%
 
 "{" 				{ return '{'; }
@@ -50,6 +53,7 @@ ESPECIAL_P          "'"(\\\\)"'"
 "!=" 				{ return T_NOT_EQUAL; }
 "&&" 				{ return T_AND; }
 "||" 				{ return T_OR; }
+"0x"				{ BEGIN(hex);}
 [ \t] 				{}
 \n  				{line++;}
 "bool" 				{ return T_BOOL; }
@@ -71,10 +75,11 @@ ESPECIAL_P          "'"(\\\\)"'"
 "true"	 			{ return T_TRUE; }
 "void"	 			{ return T_VOID; }
 "while" 			{ return T_WHILE; }
-"main" 				{ return T_MAIN; }
 \" 					{ BEGIN(str);}
 
 {NUMBER}			{ yylval.num_t = atoi(yytext); return T_INT_CONSTANT; }
+
+<hex>{HEXADECIMAL}	{yylval.num_t=strtoul(strdup(yytext),0, 16); BEGIN(INITIAL); return T_INT_CONSTANT; }
 {ID} 				{ yylval.id_t = strdup(yytext); return T_ID; }
 {CHARACTER} 		{ yylval.char_t = yytext[1]; return T_CHAR_CONSTANT; }
 <str>[^\"]* 		{ yylval.string_t = strdup(yytext); return T_STRING_CONSTANT;}
