@@ -2,7 +2,6 @@
 #define _TREE_H_
 
 #include <string>
-#include <stdio.h>
 #include <cstdio>
 #include <stdlib.h>
 #include <iostream>
@@ -427,7 +426,7 @@ public:
 class ReadStatement : public Statement {
 public:
 
-    ReadStatement(IdList ids) {
+    ReadStatement(DeclItemList ids) {
         this->ids = ids;
     }
     void execute();
@@ -436,7 +435,7 @@ public:
         return READ_STATEMENT;
     }
 
-    IdList ids;
+    DeclItemList ids;
 };
 
 class ReturnStatement : public Statement {
@@ -647,10 +646,6 @@ public:
     MethodList *Methods;
     DeclList *Variables;
 };
-
-
-
-
 
 typedef list<AssignStatement*> AssignList;
 

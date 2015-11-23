@@ -15,7 +15,7 @@ void yyerror(const char *str)
 #define YYERROR_VERBOSE 1
 Program *program;
 %}
-%expect 44
+%expect 4
 %union {
     char *id_t;
     char *string_t;
@@ -64,11 +64,11 @@ Program *program;
 
 program: T_CLASS T_ID '{' opt_declarations opt_methods'}'{ program=new Program($4,$5);}
 
-						  //FALTA
+						  
 
 ;
 opt_methods: method_list  {$$=$1;}
-			|{$$=0; }
+			|{$$=new MethodList(); }
 				
 ;
 
@@ -173,16 +173,16 @@ statement_list: statement_list statement	{ $$=$1; $$->push_back($2);}
 
 ;
 
-statement: assign ';'													{$$=$1;}
-	   | method_call_statement ';'											{$$=$1;}
+statement: assign ';'																	{$$=$1;}
+	   | method_call_statement ';'														{$$=$1;}
 	   | T_IF '(' expr ')' '{'statement_list '}' opt_else								{$$=new IfStatement($3,*$6,*$8);}
 	   | T_WHILE '(' expr ')' '{'statement_list '}'									    {$$=new WhileStatement($3,*$6);}
 	   | T_FOR '(' assign_list  ';'  expr  ';'  assign_list  ')' '{'statement_list '}'	{$$=new ForStatement(*$3,$5,*$7,*$10);}
-	   | T_RETURN opt_expr  ';'											{$$=new ReturnStatement($2);}
-	   | T_BREAK ';'													{$$=new BreakStatement();}
-	   | T_CONTINUE ';'													{$$=new ContinueStatement();}
-	   | T_PRINT arguments_list ';'										{$$=new PrintStatement(*$2);}
-		// FALTA EL READ
+	   | T_RETURN opt_expr  ';'															{$$=new ReturnStatement($2);}
+	   | T_BREAK ';'																	{$$=new BreakStatement();}
+	   | T_CONTINUE ';'																	{$$=new ContinueStatement();}
+	   | T_PRINT arguments_list ';'														{$$=new PrintStatement(*$2);}
+	   | T_READ id_listP ';'															{$$=new ReadStatement(*$2);}
 ;
 
 opt_expr: expr	{$$=$1;}
@@ -241,7 +241,7 @@ argument: T_STRING_CONSTANT	{$$=new StrExpr($1);}
 ;
 
 opt_expr_list: expr_list {$$=$1;}
-	         | 	{$$=0;}
+	         | 	{$$=new ExprList();}
 
 ;
 
@@ -256,54 +256,54 @@ expr_list: expr_list  ','  expr	{
 
 ;
 
-expr: expr T_OR expr		{$$=new OrExpr($1,$3);}
+expr: expr T_OR expr_a		{$$=new OrExpr($1,$3);}
 	| expr_a					{$$=$1;}
 
 ;
 
-expr_a:expr_a T_AND expr_a 	{$$=new AndExpr($1,$3);}
+expr_a:expr_a T_AND expr_eq 	{$$=new AndExpr($1,$3);}
 	| expr_eq
 		
 ;
 
-expr_eq: expr_eq T_EQUAL expr_eq 		{$$=new EqualExpr($1,$3);}
-	   | expr_eq T_NOT_EQUAL expr_eq 	{$$=new NotEqualExpr($1,$3);}
+expr_eq: expr_eq T_EQUAL expr_re 		{$$=new EqualExpr($1,$3);}
+	   | expr_eq T_NOT_EQUAL expr_re 	{$$=new NotEqualExpr($1,$3);}
 	   | expr_re						{$$=$1;}
 
 ;
 
-expr_re: expr_re '<' expr_re 				{$$=new LessThanExpr($1,$3);}
-	   | expr_re '>' expr_re 				{$$=new GreaterThanExpr($1,$3);}
-	   | expr_re T_LESS_EQUAL expr_re 		{$$=new LessThanEqualExpr($1,$3);}
-	   | expr_re T_GREATER_EQUAL expr_re	{$$=new GreaterThanEqualExpr($1,$3);}
+expr_re: expr_re '<' expr_bit 				{$$=new LessThanExpr($1,$3);}
+	   | expr_re '>' expr_bit 				{$$=new GreaterThanExpr($1,$3);}
+	   | expr_re T_LESS_EQUAL expr_bit 		{$$=new LessThanEqualExpr($1,$3);}
+	   | expr_re T_GREATER_EQUAL expr_bit	{$$=new GreaterThanEqualExpr($1,$3);}
 	   | expr_bit 							{$$=$1;}
 
 ;
 
-expr_bit: expr_bit T_LEFT_BIT expr_bit		{$$=new ShiftLeftExpr($1,$3);}
-		| expr_bit T_RIGHT_BIT expr_bit		{$$=new ShiftRightExpr($1,$3);}
-		| expr_bit T_ROT expr_bit			{$$=new RotExpr($1,$3);}
+expr_bit: expr_bit T_LEFT_BIT expr_md 		{$$=new ShiftLeftExpr($1,$3);}
+		| expr_bit T_RIGHT_BIT expr_md 		{$$=new ShiftRightExpr($1,$3);}
+		| expr_bit T_ROT expr_md 			{$$=new RotExpr($1,$3);}
 		| expr_md 							{$$=$1;}
 
 ;
 
-expr_md: expr_md '%' expr_md	{$$=new ModExpr($1,$3);}
+expr_md: expr_md '%' expr_ar	{$$=new ModExpr($1,$3);}
 	   | expr_ar 				{$$=$1;}
 
 ;
 
-expr_ar : expr_ar '+' expr_ar 	{$$=new AddExpr($1,$3);}
-		| expr_ar '-' expr_ar 	{$$=new SubExpr($1,$3);}
+expr_ar : expr_ar '+' expr_fa 	{$$=new AddExpr($1,$3);}
+		| expr_ar '-' expr_fa 	{$$=new SubExpr($1,$3);}
 		| expr_fa 				{$$=$1;}
 
 ;
 
-expr_fa : expr_fa '*' expr_fa	{$$=new MultExpr($1,$3);}
-		| expr_fa '/' expr_fa	{$$=new DivExpr($1,$3);}
+expr_fa : expr_fa '*' expr_ne	{$$=new MultExpr($1,$3);}
+		| expr_fa '/' expr_ne	{$$=new DivExpr($1,$3);}
 		| expr_ne				{$$=$1;}
 ;
 
-expr_ne	: '!' expr_ne 	{$$=new NotExpr($2);}
+expr_ne	: '!' expr_neg 	{$$=new NotExpr($2);}
 		| expr_neg		{$$=$1;}
 
 ;
@@ -316,7 +316,7 @@ expr_neg: '-' term		{$$=new NegativeExpr($2);}
 term: constant			{$$=$1;}
 	| method_call_expr	{$$=$1;}
 	| '(' expr ')'		{$$=$2;}
-	| variable 		{$$=$1;}
+	| variable 			{$$=$1;}
 ;
 
 variable:T_ID  { 

@@ -1,4 +1,5 @@
 
+#include <errno.h>
 #include "tree.h"
 #include <algorithm>
 
@@ -22,7 +23,8 @@ using namespace std;
                 val.u.bvalue=e2.IntValue() OP e1.BoolValue(); 						\
                                                                                                                                                         \
         }else{																	\
-                printf("Expected Bool or Integer"); 								\
+                printf("Expected Bool or Integer"); \
+                exit(0);								\
         }																		\
         return val;																\
     }	
@@ -38,8 +40,9 @@ using namespace std;
 																				\
 	 	if(e1.type==INT && e2.type==INT){										\
 	 		val.type=INT;														\
-			val.u.ivalue=e1.IntValue() OP e2.IntValue(); 						\
-	 	}																		\
+                        val.isArray=false;                                                                        \
+                        val.u.ivalue=e1.IntValue() OP e2.IntValue(); 						\
+                }																		\
 	 	return val;																\
  	}
 
@@ -63,6 +66,8 @@ IMPLEMENT_ARITHMETIC_OPERATION(ModExpr, %)
 map<string, VValue> sTable;
 map<string, Method*> mTable;
 VValue returnValue;
+VValue st={st.type = INT,st.u.ivalue = 0, st.isArray=false,st.ArraySize=0};
+
 string MethodName;
 
 string getTextForEnum(int enumVal) {
@@ -142,7 +147,7 @@ void BlockStatement::execute() {
 
 void AssignStatement::execute() {
     
-    VValue var;
+    VValue var=st;
     bool method=false;
     if (sTable.find(id) == sTable.end()) {
         if (mTable.find(MethodName) != mTable.end()) {
@@ -159,7 +164,7 @@ void AssignStatement::execute() {
         }
     }else{
         var=sTable[id];
-        method=false;
+        
     }
     
     VValue result = expr->evaluate();
@@ -169,8 +174,10 @@ void AssignStatement::execute() {
         
         if(dim==0){
             printf("%s is an Array",id.c_str());
+            exit(0);
         }
         int d=dim->evaluate().IntValue();
+        
         if(var.type==INT){
             var.setIntArrayValue(d,result.IntValue());
         }else{
@@ -184,6 +191,7 @@ void AssignStatement::execute() {
     }else{
         if(var.type!=result.type){
             printf("Incompatible types.\n");
+            exit(0);
         }
         if(method){
             mTable[MethodName]->LTable[id]=result;
@@ -247,13 +255,15 @@ void Method::execute() {
     }
     if(id.find(string("main"))!=string::npos && params.size()>0){
         printf("main Method can't have params.\n");
+        exit(0);
     }
     
     ParamList::iterator it3 = this->params.begin();
     while (it3 != this->params.end()) {
         Param *s = *it3;
-        if (LTable.find(s->id) != LTable.end() && sTable.find(s->id) != sTable.end()) {
-            printf("Variables \"%s\" already exist.", s->id.c_str());
+        if ( sTable.find(s->id) != sTable.end() || LTable.find(s->id) != LTable.end()) {
+                printf("Variables \"%s\" already exist.\n", s->id.c_str());
+                exit(0);
         }
         VValue v;
         v.type = s->type;
@@ -273,8 +283,9 @@ void Method::execute() {
         DeclItemList::iterator it2 = d->ids.begin();
         while (it2 != d->ids.end()) {
             DeclItem *s = *it2;
-            if (LTable.find(s->id) != LTable.end() && sTable.find(s->id) != sTable.end()) {
-                printf("Variables \"%s\" already exist.", s->id.c_str());
+            if ( sTable.find(s->id) != sTable.end() || LTable.find(s->id) != LTable.end()) {
+                printf("Variables \"%s\" already exist.\n", s->id.c_str());
+                exit(0);
             }
             if(d->value!=0){
                 this->LTable[s->id] = d->value->evaluate();
@@ -294,7 +305,7 @@ void Method::execute() {
         }
         it++;
     }
-    mTable[id] = this;
+    mTable[this->id] = this;
 }
 
 void Program::Initialize() {
@@ -319,31 +330,10 @@ void Program::Initialize() {
 }
 
 void Program::RunMain(){
-    /*MethodList::iterator it= Methods->begin();
-    bool found=false;
-    while(it!=Methods->end())
-    {  
-        Method *m =*it;
-        if(m->id.find(string("main"))!=string::npos)
-        {   
-            StatementList::iterator it2 = m->statementBlock.begin();
-            while (it2 != m->statementBlock.end()) {
-                Statement* s = *it2;
-                s->execute();
-                it2++;
-            }
-            
-            found=true;
-        }
-        it++;
-    }
-    
-    if(!found){
-        printf("There is no method called \"main\"\n");
-    }*/
     MethodName="main";
     if(mTable.find("main")==mTable.end()){
         printf("There is no method called \"main\"\n");
+        exit(0);
     }
     Method *m =mTable["main"];
     StatementList::iterator it = m->statementBlock.begin();
@@ -360,7 +350,7 @@ void ForStatement::execute() {
     while (it != assignStatement.end()) {
         Statement* s = *it;
         if (s->getKind() != ASSIGN_STATEMENT) {
-            printf("Expected Assign statement");
+            printf("Expected Assign statement.\n");
             exit(0);
         }
         s->execute();
@@ -386,7 +376,7 @@ void ForStatement::execute() {
             while (it2 != finalAssignStatement.end()) {
                 Statement* s2 = *it2;
                 if (s2->getKind() != ASSIGN_STATEMENT) {
-                    printf("Expected Assign statement");
+                    printf("Expected Assign statement.\n");
                     exit(0);
                 }
                 s2->execute();
@@ -396,12 +386,13 @@ void ForStatement::execute() {
 }
 
 void Declaration::execute() {
-    VValue val;
+    VValue val=st;
     if (value != 0) {
         val = value->evaluate();
 
-        if (val.type != type) {
-            printf("incompatible types");
+        if ( val.type != type) {
+            printf("incompatible types.\n");
+            exit(0);
         }
     }
     if (type == INT) {
@@ -412,6 +403,7 @@ void Declaration::execute() {
     DeclItemList::iterator it = ids.begin();
     while (it != ids.end()) {
         DeclItem *id = *it;
+        
         if (sTable.find(id->id) != sTable.end()) {
             printf("Variable %s is already declared\n", id->id.c_str());
             exit(0);
@@ -438,16 +430,43 @@ void Declaration::execute() {
 }
 
 void ReadStatement::execute() {
-    list<string>::iterator it = ids.begin();
+    bool method=false;
+    DeclItemList::iterator it = ids.begin();
     while (it != ids.end()) {
-        string id = *it;
-        string input = "";
-        if (sTable.find(id) == sTable.end()) {
-            printf("Variable %s is not declared\n", id.c_str());
-            exit(0);
+        DeclItem *id = *it;
+        int input =0;
+        if (sTable.find(id->id) == sTable.end()) {
+            if (mTable.find(MethodName) != mTable.end()) {
+                if (mTable[MethodName]->LTable.find(id->id) != mTable[MethodName]->LTable.end()) {
+                    method=true;
+                }else{
+                    printf("Variable %s is not declared\n", id->id.c_str());
+                    exit(0);
+                }
+            }else{
+                printf("Variable %s is not declared\n", id->id.c_str());
+                exit(0);
+            }
         }
-        getline(cin, input);
-        //sTable[id]=val;
+        
+        if(method){
+            char *p;
+            //mTable[MethodName]->LTable[id];
+            //printf("entre\n");
+            fflush(stdin);
+            
+            
+           // scanf("%d", &input);
+            //errno = 0;
+            //int result = scanf("%m[a-z]", &p);
+            //printf("result = %d errno = %d %s\n", result, errno, p);
+            
+        }else{
+            /*char buffer[100];
+            fgets(buffer, 99, stdin);*/
+            sscanf("V: ","%d", &input);
+        }
+        
         it++;
     }
 }
@@ -461,7 +480,7 @@ void BreakStatement::execute() {
 }
 
 void ReturnStatement::execute() {
-    VValue v;
+    VValue v=st;
     if (expr == 0) {
         v.isArray=false;
         returnValue = v;
@@ -473,13 +492,11 @@ void ReturnStatement::execute() {
 
 void MethodStatement::execute() {
     string previous=MethodName;
-    MethodName = this->id;
     if (mTable.find(id) == mTable.end()) {
         printf("\nThere is not a method \"%s\"\n", id.c_str());
         exit(0);
     }
     Method* m = mTable[id];
-
     if (exprs.size() != m->params.size()) {
         printf("Expected %d parameters.\n", m->params.size());
         exit(0);
@@ -488,21 +505,29 @@ void MethodStatement::execute() {
     ExprList::iterator it2 = exprs.begin();
     ParamList::iterator it3 = m->params.begin();
     while (it2 != exprs.end()) {
+        
         VValue v = (*it2)->evaluate();
         Param * p = *it3;
         if (v.type != p->type) {
-            printf("Expected %s type.\n ", getTextForEnum(p->type).c_str());
+            printf("Expected %s type.\n", getTextForEnum(p->type).c_str());
             exit(0);
         }
         m->LTable[p->id] = v;
+
         it2++;
         it3++;
     }
-
+    
+    MethodName = this->id;
+   // mTable[id]=m;
+    
     StatementList::iterator it = m->statementBlock.begin();
     while (it != m->statementBlock.end()) {
         Statement* s = *it;
         s->execute();
+        if(s->getKind()==RETURN_STATEMENT){
+            MethodName = previous;
+        }
         it++;
     }
     MethodName = previous;
@@ -540,7 +565,7 @@ VValue ArrayExpr::evaluate() {
 }
 
 VValue StrExpr::evaluate() {
-    VValue value;
+    VValue value=st;
     value.type = STRINGS;
     value.u.svalue = strdup(val.c_str());
     value.isArray=false;
@@ -554,7 +579,7 @@ VValue NegativeExpr::evaluate() {
         v.u.ivalue = v.IntValue()*(-1);
         return v;
     } else {
-        printf("Expected integer.");
+        printf("Expected integer.\n");
         exit(0);
     }
 
@@ -577,13 +602,11 @@ VValue NotExpr::evaluate() {
 
 VValue MethodExpr::evaluate() {
     string previous=MethodName;
-    MethodName = this->id;
     if (mTable.find(id) == mTable.end()) {
         printf("\nThere is not a method \"%s\"\n", id.c_str());
         exit(0);
     }
     Method* m = mTable[id];
-
     if (exprs.size() != m->params.size()) {
         printf("Expected %d parameters.\n", m->params.size());
         exit(0);
@@ -592,6 +615,7 @@ VValue MethodExpr::evaluate() {
     ExprList::iterator it2 = exprs.begin();
     ParamList::iterator it3 = m->params.begin();
     while (it2 != exprs.end()) {
+        
         VValue v = (*it2)->evaluate();
         Param * p = *it3;
         if (v.type != p->type) {
@@ -599,14 +623,22 @@ VValue MethodExpr::evaluate() {
             exit(0);
         }
         m->LTable[p->id] = v;
+
         it2++;
         it3++;
     }
-
+    
+    MethodName = this->id;
+   // mTable[id]=m;
+    
     StatementList::iterator it = m->statementBlock.begin();
     while (it != m->statementBlock.end()) {
         Statement* s = *it;
         s->execute();
+        if(s->getKind()==RETURN_STATEMENT){
+            MethodName = previous;
+            return returnValue;
+        }
         it++;
     }
     MethodName = previous;

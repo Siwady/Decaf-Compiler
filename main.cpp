@@ -8,5 +8,4 @@ int main() {
     yyparse();
     program->Initialize();
     program->RunMain();
-    
 }
