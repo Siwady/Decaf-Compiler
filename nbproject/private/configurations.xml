@@ -6,6 +6,9 @@
       <in>main.cpp</in>
       <in>parser.cpp</in>
       <in>test.c</in>
+      <in>test2.c</in>
+      <in>test3.c</in>
+      <in>test4.c</in>
       <in>tokens.h</in>
       <in>tree.cpp</in>
       <in>tree.h</in>
@@ -36,8 +39,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

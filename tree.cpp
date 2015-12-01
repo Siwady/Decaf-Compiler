@@ -2,6 +2,7 @@
 #include <errno.h>
 #include "tree.h"
 #include <algorithm>
+#include <sstream>
 
 using namespace std;
 
@@ -22,6 +23,9 @@ using namespace std;
         }else if(e2.type==INT && e1.type==BOOLEAN){									\
                 val.u.bvalue=e2.IntValue() OP e1.BoolValue(); 						\
                                                                                                                                                         \
+        }else if(e2.type==BOOLEAN && e1.type==BOOLEAN){									\
+                val.u.bvalue=e2.BoolValue() OP e1.BoolValue(); 						\
+                                                                                                                                                        \
         }else{																	\
                 printf("Expected Bool or Integer"); \
                 exit(0);								\
@@ -37,9 +41,9 @@ using namespace std;
 																				\
 		e1=expr1->evaluate();													\
 		e2=expr2->evaluate();													\
-																				\
+		val.type=INT;																	\
 	 	if(e1.type==INT && e2.type==INT){										\
-	 		val.type=INT;														\
+	 																\
                         val.isArray=false;                                                                        \
                         val.u.ivalue=e1.IntValue() OP e2.IntValue(); 						\
                 }																		\
@@ -63,13 +67,43 @@ IMPLEMENT_ARITHMETIC_OPERATION(ShiftLeftExpr, <<)
 IMPLEMENT_ARITHMETIC_OPERATION(ShiftRightExpr, >>)
 IMPLEMENT_ARITHMETIC_OPERATION(ModExpr, %)
 
+const char *temps[] = {"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9"};
+#define TEMP_COUNT (sizeof(temps)/sizeof(temps[0]))       
+map<string, int> tempMap;
+int label;
+
 map<string, VValue> sTable;
 map<string, Method*> mTable;
 VValue returnValue;
 VValue st={st.type = INT,st.u.ivalue = 0, st.isArray=false,st.ArraySize=0};
 
 string MethodName;
+list<VValue> ActualVariables;
 
+string newTemp() {
+    int i;
+
+    for (i = 0; i < TEMP_COUNT; i++) {
+        if (tempMap.find(temps[i]) == tempMap.end()) {
+            tempMap[temps[i]] = 1;
+
+            return string(temps[i]);
+        }
+    }
+
+    return string("");
+}
+
+string newLabel() {
+    string s = "Label";
+    stringstream sstm;
+    sstm << s << label++;
+    return sstm.str();
+}
+
+void releaseTemp(string temp) {
+    tempMap.erase(temp);
+}
 string getTextForEnum(int enumVal) {
     switch (enumVal) {
         case BOOLEAN:
@@ -203,7 +237,7 @@ void AssignStatement::execute() {
 
 void IfStatement::execute() {
     
-    int result = cond->evaluate().IntValue();
+    int result = cond->evaluate().BoolValue();
 
     if (result) {
         StatementList::iterator it = trueBlock.begin();
@@ -492,21 +526,36 @@ void ReturnStatement::execute() {
 
 void MethodStatement::execute() {
     string previous=MethodName;
+    
     if (mTable.find(id) == mTable.end()) {
         printf("\nThere is not a method \"%s\"\n", id.c_str());
         exit(0);
     }
+    
     Method* m = mTable[id];
+    map<string, VValue> vars;
+    vars=m->LTable;
+    
+    list<Expr*>::iterator it5=exprs.begin();
+    ActualVariables.clear();
+    while(it5!=exprs.end())
+    {
+        VValue v=(*it5)->evaluate();
+        ActualVariables.push_back(v);
+        it5++;
+    }
+    
+    
     if (exprs.size() != m->params.size()) {
         printf("Expected %d parameters.\n", m->params.size());
         exit(0);
     }
 
-    ExprList::iterator it2 = exprs.begin();
+    list<VValue>::iterator it2 = ActualVariables.begin();
     ParamList::iterator it3 = m->params.begin();
-    while (it2 != exprs.end()) {
+    while (it2 != ActualVariables.end()) {
         
-        VValue v = (*it2)->evaluate();
+        VValue v = (*it2);
         Param * p = *it3;
         if (v.type != p->type) {
             printf("Expected %s type.\n", getTextForEnum(p->type).c_str());
@@ -517,9 +566,9 @@ void MethodStatement::execute() {
         it2++;
         it3++;
     }
-    
+    ActualVariables.clear();
     MethodName = this->id;
-   // mTable[id]=m;
+    //mTable[id]=m;
     
     StatementList::iterator it = m->statementBlock.begin();
     while (it != m->statementBlock.end()) {
@@ -531,6 +580,7 @@ void MethodStatement::execute() {
         it++;
     }
     MethodName = previous;
+    m->LTable=vars;
 }
 
 VValue IdExpr::evaluate() {
@@ -602,21 +652,36 @@ VValue NotExpr::evaluate() {
 
 VValue MethodExpr::evaluate() {
     string previous=MethodName;
+    
     if (mTable.find(id) == mTable.end()) {
         printf("\nThere is not a method \"%s\"\n", id.c_str());
         exit(0);
     }
+    
     Method* m = mTable[id];
+    map<string, VValue> vars;
+    vars=m->LTable;
+    
+    list<Expr*>::iterator it5=exprs.begin();
+    ActualVariables.clear();
+    while(it5!=exprs.end())
+    {
+        VValue v=(*it5)->evaluate();
+        ActualVariables.push_back(v);
+        it5++;
+    }
+    
+    
     if (exprs.size() != m->params.size()) {
         printf("Expected %d parameters.\n", m->params.size());
         exit(0);
     }
 
-    ExprList::iterator it2 = exprs.begin();
+    list<VValue>::iterator it2 = ActualVariables.begin();
     ParamList::iterator it3 = m->params.begin();
-    while (it2 != exprs.end()) {
+    while (it2 != ActualVariables.end()) {
         
-        VValue v = (*it2)->evaluate();
+        VValue v = (*it2);
         Param * p = *it3;
         if (v.type != p->type) {
             printf("Expected %s type.\n", getTextForEnum(p->type).c_str());
@@ -627,9 +692,9 @@ VValue MethodExpr::evaluate() {
         it2++;
         it3++;
     }
-    
+    ActualVariables.clear();
     MethodName = this->id;
-   // mTable[id]=m;
+    //mTable[id]=m;
     
     StatementList::iterator it = m->statementBlock.begin();
     while (it != m->statementBlock.end()) {
@@ -642,6 +707,7 @@ VValue MethodExpr::evaluate() {
         it++;
     }
     MethodName = previous;
+    m->LTable=vars;
     return returnValue;
 }
 
@@ -677,4 +743,429 @@ VValue RotExpr::evaluate() {
     return v;
 }
 
+//-------------  GENERATE CODE  EXPRESIONS----------------------------------------------
 
+string AddExpr::generateCode(string& place){
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+          code2 << endl <<
+          "add " << place << ", " << place1 << ", " << place2;
+          
+    return ss.str();
+}
+
+string SubExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "sub " << place << ", " << place1 << ", " << place2;
+    
+    return ss.str();
+}
+
+string LessThanExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "slt " << place << ", " << place1 << ", " << place2;
+    
+    return ss.str();
+}
+string GreaterThanExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "slt " << place << ", " << place2 << ", " << place1;
+    
+    return ss.str();
+}
+
+string LessThanEqualExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "slt "  << place << ", " << place2 << ", " << place1 <<"\n"<<
+    "nor "  << place << ", " << place  << ", " << place  << "\n"<<
+    "addi " << place << ", " << place  << ", 2";
+    
+    return ss.str();
+}
+
+string GreaterThanEqualExpr::generateCode(string &place)//falta
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2   << endl <<
+    "slt "  << place << ", " << place1 << ", " << place2 <<"\n"<<
+    "nor "  << place << ", " << place  << ", " << place  <<"\n"<<
+    "addi " << place << ", " << place  << ", 2";
+    
+    return ss.str();
+}
+string EqualExpr::generateCode(string &place)
+{
+    string place1, place2, true_l,end_l;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    true_l=newLabel();
+    end_l=newLabel();
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "beq "<< place1 << ", " << place2 << ", " <<true_l<<"\n"<<
+    "li " << place  << ", " << "0\n"  <<
+    "j "  << end_l  << "\n" <<
+    true_l<< ":\n"  <<
+    "li " << place  << ", " << "1\n"  <<
+    end_l << ":\n";
+    
+    return ss.str();
+}
+
+string NotEqualExpr::generateCode(string &place)
+{
+    string place1, place2, true_l,end_l;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    true_l=newLabel();
+    end_l=newLabel();
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "beq "<< place1 << ", " << place2 << ", " <<true_l<<"\n"<<
+    "li " << place  << ", " << "1\n"  <<
+    "j "  << end_l  << "\n" <<
+    true_l<< ":\n"  <<
+    "li " << place  << ", " << "0\n"  <<
+    end_l << ":\n";
+    
+    return ss.str();
+}
+
+
+string MultExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "mult " << place1 << ", " << place2 << endl <<
+    "mflo " << place;
+    
+    return ss.str();
+}
+
+string DivExpr::generateCode(string &place)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1);
+    string code2 = expr2->generateCode(place2);
+    stringstream ss;
+    
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+    
+    ss << code1 << endl <<
+    code2 << endl <<
+    "div " << place1 << ", " << place2 << endl <<
+    "mflo " << place;
+    
+    return ss.str();
+}
+
+string IntExpr::generateCode(string &place)
+{
+    stringstream ss;
+    
+    place = newTemp();
+    
+    ss << "li " << place << ", " << value.IntValue();
+    
+    return ss.str();
+}
+string BoolExpr::generateCode(string &place)
+{
+    stringstream ss;
+    
+    place = newTemp();
+    
+    ss << "li " << place << ", " << value.BoolValue();
+    
+    return ss.str();
+}
+
+string IdExpr::generateCode(string &place)
+{
+	if(sTable.find(id) == sTable.end())
+	{
+		printf("Id %s no existe!\n",id.c_str());
+		exit(0);
+	}
+	stringstream ss;
+
+	place = newTemp();
+        
+	ss << "la " << place << ", " << id << endl <<
+	"lw " << place << ", " << "0("<< place << ")" << endl;
+
+	return ss.str();
+		
+}
+
+string NegativeExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string CharExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string StrExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string MethodExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+string ShiftLeftExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string ShiftRightExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string RotExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string AndExpr::generateCode(string& place){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+
+
+//---------------GENERATE CODE  STATEMENT------------
+
+string IfStatement::generateCode(string label1, string label2) {
+    string place1, place2;
+    string code = this->cond->generateCode(place1);
+
+    string lbl1 = newLabel();
+    string lbl2 = newLabel();
+    
+    place2 = newTemp();
+    stringstream ss;
+    string place = newTemp();
+    releaseTemp(place1);
+
+    string bcode ="";
+    StatementList::iterator it=this->trueBlock.begin();
+    while(it!=this->trueBlock.end()){
+        Statement *s=*it;
+        bcode+= s->generateCode(label1, label2);
+        it++;
+    }
+    
+    string bcode2 = "";
+    if (this->falseBlock.empty()){
+        StatementList::iterator it2=this->falseBlock.begin();
+        while(it2!=this->falseBlock.end()){
+            Statement *s=*it2;
+            bcode2+= s->generateCode(label1, label2);
+            it2++;
+        }
+    }
+    ss <<   "#-IfStatement -\n"<< 
+            code << endl <<
+            "addi " << place2 << ", " << "$zero, 1\n" <<
+            "beq " << place1 << ", " << place2 << ", " << lbl1 << "\n" <<
+            bcode2 << "\n" <<
+            "j " << lbl2 << "\n" <<
+            lbl1 << ": \n" <<
+            bcode <<
+            lbl2 << ": \n"<<
+            "#-End IfStatement -\n" ;
+
+    releaseTemp(place);
+    return ss.str();
+}
+
+string WhileStatement::generateCode(string label1, string label2) {
+    string place1;
+    string code = this->cond->generateCode(place1);
+    label1 = newLabel();
+    label2 = newLabel();
+    stringstream ss;
+    string place = newTemp();
+    releaseTemp(place1);
+
+    string bcode ="";
+    StatementList::iterator it=this->statementBlock.begin();
+    while(it!=this->statementBlock.end()){
+        Statement * s=*it;
+        bcode+= s->generateCode(label1,label2);
+    }
+     
+    ss <<   "#-WhileStatement -\n"<< 
+            label1 <<":\n"<<
+            code << endl <<
+            "beq " << place1 << ", " << "$zero, " << label2 << "\n" <<
+            bcode <<
+            "j " << label1 << "\n" <<
+            label2 << ": \n"<<
+            "#-End WhileStatement -\n";
+
+    releaseTemp(place);
+    return ss.str();
+}
+
+string ForStatement::generateCode(string label1, string label2){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string ReturnStatement::generateCode(string label1, string label2){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string MethodStatement::generateCode(string label1, string label2){
+    stringstream ss;
+    
+    return ss.str();
+}
+
+string BreakStatement::generateCode(string label1, string label2) {
+    stringstream ss;
+    if(!label1.empty()){
+        ss << "#-BreakStatement -\n"<< 
+                "j " << label2 << "\n";
+    }else{
+        printf("Unexpected break.\n");
+        exit(0);
+    }
+    return ss.str();
+}
+
+string ContinueStatement::generateCode(string label1, string label2) {
+    stringstream ss;
+    if(!label1.empty()){
+        ss << "#-ContinueStatement -\n"<< 
+                "j " << label1 << "\n";
+    }else{
+        printf("Unexpected continue.\n");
+        exit(0);
+    }
+    return ss.str();
+}
+
+void Declaration::generateCode() {
+    DeclItemList::iterator it=ids.begin();
+    
+    while(it!=ids.end()){
+        DeclItem *i=*it;
+        if (sTable.find(i->id) != sTable.end()) {
+            printf("Variable %s already exist.\n",i->id.c_str());
+            exit(0);
+        }
+        VValue v;
+        v.type=type;
+        sTable[i->id] =v;
+        if(this->type==INT){
+            cout << i->id << ": .word 0" << endl;
+        }else{
+            cout << i->id << ": .double 0.0" << endl;
+        }
+        
+        it++;
+    }
+}

@@ -1,0 +1,16 @@
+Sum:20
+Sub:0
+Mult:100
+Div:1
+Mod:1
+slt:4
+sgt:16
+rot:32
+EQ:True
+LT:False
+GT:False
+NotEQ:False
+GTE:True
+LTE:True
+OR:True
+AND:False

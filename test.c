@@ -8,13 +8,13 @@ class GreatestCommonDivisor {
         z = gcd(x, y);
         w= gcd(12, 20);
         print "z=",z,"\nw=",w,"\n";
+        
     }
     
     // Función que calcula el máximo común divisor
     int gcd(int a, int b) {
-        int c;
         if (b == 0) { return(a); }
-        else {c=a%b;return( gcd(b, c) ); 
+        else {return( gcd(b,a%b) ); 
         }
     }
     void printhola(){
