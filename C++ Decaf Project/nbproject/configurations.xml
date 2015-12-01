@@ -31,8 +31,8 @@
       <makefileType>
         <makeTool>
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
-          <buildCommand>${MAKE} -f Makefile</buildCommand>
-          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <buildCommand>make</buildCommand>
+          <cleanCommand>make clean</cleanCommand>
           <executablePath>decaf</executablePath>
         </makeTool>
       </makefileType>

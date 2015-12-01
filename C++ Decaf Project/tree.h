@@ -111,7 +111,6 @@ typedef list<DeclItem*> DeclItemList;
 class Expr {
 public:
     virtual VValue evaluate() = 0;
-    virtual string generateCode(string &place) = 0;
 };
 
 typedef list<Expr*> ExprList;
@@ -135,7 +134,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class GreaterThanExpr : public BinaryExpr {
@@ -145,7 +143,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class LessThanEqualExpr : public BinaryExpr {
@@ -155,7 +152,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class GreaterThanEqualExpr : public BinaryExpr {
@@ -165,7 +161,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class NotEqualExpr : public BinaryExpr {
@@ -175,7 +170,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class EqualExpr : public BinaryExpr {
@@ -185,7 +179,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class AddExpr : public BinaryExpr {
@@ -195,7 +188,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class SubExpr : public BinaryExpr {
@@ -205,7 +197,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class MultExpr : public BinaryExpr {
@@ -215,7 +206,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class DivExpr : public BinaryExpr {
@@ -225,7 +215,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class NegativeExpr : public Expr {
@@ -237,7 +226,6 @@ public:
 
     VValue evaluate();
     Expr *expr;
-    string generateCode(string &place);
 };
 
 class NotExpr : public Expr {
@@ -249,7 +237,6 @@ public:
 
     VValue evaluate();
     Expr *expr;
-    string generateCode(string &place);
 };
 
 class OrExpr : public BinaryExpr {
@@ -259,7 +246,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class AndExpr : public BinaryExpr {
@@ -269,7 +255,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class ShiftLeftExpr : public BinaryExpr {
@@ -279,7 +264,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class RotExpr : public BinaryExpr {
@@ -289,7 +273,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class ModExpr : public BinaryExpr {
@@ -299,7 +282,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class ShiftRightExpr : public BinaryExpr {
@@ -309,7 +291,6 @@ public:
     }
 
     VValue evaluate();
-    string generateCode(string &place);
 };
 
 class IntExpr : public Expr {
@@ -325,7 +306,6 @@ public:
     }
 
     VValue value;
-    string generateCode(string &place);
 };
 
 class BoolExpr : public Expr {
@@ -341,7 +321,6 @@ public:
     }
 
     VValue value;
-    string generateCode(string &place);
 };
 
 class IdExpr : public Expr {
@@ -353,7 +332,6 @@ public:
     VValue evaluate();
 
     string id;
-    string generateCode(string &place);
 };
 
 class ArrayExpr : public Expr {
@@ -367,7 +345,6 @@ public:
 
     string id;
     Expr* dim;
-    string generateCode(string &place);
 };
 
 class StrExpr : public Expr {
@@ -379,7 +356,6 @@ public:
     VValue evaluate();
 
     string val;
-    string generateCode(string &place);
 };
 
 class CharExpr : public Expr {
@@ -395,7 +371,6 @@ public:
     }
 
     VValue value;
-    string generateCode(string &place);
 };
 
 class MethodExpr : public Expr {
@@ -409,7 +384,6 @@ public:
 
     string id;
     ExprList exprs;
-    string generateCode(string &place);
 };
 
 enum StatementKind {
@@ -430,7 +404,6 @@ class Statement {
 public:
     virtual void execute() = 0;
     virtual StatementKind getKind() = 0;
-    virtual string generateCode (string label1,string label2) = 0;
 };
 
 typedef list<Statement*> StatementList;
@@ -448,7 +421,6 @@ public:
     }
 
     list<Statement *> stList;
-    string generateCode (string label1,string label2){return "";}
 };
 
 class ReadStatement : public Statement {
@@ -462,7 +434,6 @@ public:
     StatementKind getKind() {
         return READ_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     DeclItemList ids;
 };
 
@@ -477,7 +448,6 @@ public:
     StatementKind getKind() {
         return RETURN_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     Expr* expr;
     
 };
@@ -492,7 +462,6 @@ public:
     StatementKind getKind() {
         return CONTINUE_STATEMENT;
     }
-    string generateCode (string label1,string label2);
 };
 
 class BreakStatement : public Statement {
@@ -505,7 +474,6 @@ public:
     StatementKind getKind() {
         return BREAK_STATEMENT;
     }
-    string generateCode (string label1,string label2);
 };
 
 class MethodStatement : public Statement {
@@ -520,7 +488,6 @@ public:
     StatementKind getKind() {
         return METHOD_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     
     string id;
     ExprList exprs;
@@ -537,7 +504,6 @@ public:
     StatementKind getKind() {
         return PRINT_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     ExprList expr;
 };
 
@@ -554,7 +520,6 @@ public:
     StatementKind getKind() {
         return ASSIGN_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     string id;
     Expr *expr;
     Expr *dim;
@@ -573,7 +538,6 @@ public:
     StatementKind getKind() {
         return IF_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     Expr *cond;
     list<Statement *>trueBlock;
     list<Statement *>falseBlock;
@@ -591,7 +555,6 @@ public:
     StatementKind getKind() {
         return WHILE_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     Expr *cond;
     list<Statement *>statementBlock;
 };
@@ -610,7 +573,6 @@ public:
     StatementKind getKind() {
         return FOR_STATEMENT;
     }
-    string generateCode (string label1,string label2);
     StatementList assignStatement;
     Expr *cond;
     StatementList finalAssignStatement;
@@ -626,7 +588,6 @@ public:
         this->value = value;
     }
     void execute();
-    void generateCode();
     DeclItemList ids;
     VarType type;
     Expr* value;
