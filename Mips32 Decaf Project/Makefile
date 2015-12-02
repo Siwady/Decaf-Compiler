@@ -1,25 +1,25 @@
 all: decaf
 
-decaf: tree.o parser.o lexer.o main.o
-	g++ -o $@ $^
+decaf: ast.o parser.o lexer.o main.o
+	g++ -g -o $@ $^
 	
-tree.o: tree.cpp tree.h
-	g++ -c -o $@ $<
+ast.o: ast.cpp ast.h
+	g++ -g -c -o $@ $<
 
-main.o: main.cpp tree.h
-	g++ -c -o $@ $<
+main.o: main.cpp ast.h
+	g++ -g -c -o $@ $<
 
 lexer.o: lexer.cpp
-	g++ -c -o $@ $<
+	g++ -g -c -o $@ $<
 
-lexer.cpp: lexer.l tree.h
+lexer.cpp: lexer.l ast.h
 	flex -o $@ $<
 
-parser.cpp: parser.y tree.h
+parser.cpp: parser.y ast.h
 	bison --defines=tokens.h -o $@ $<
 
 tparse.o: parser.cpp
-	g++ -c -o $@ $<
+	g++ -g -c -o $@ $<
 
 clean:
 	rm -f *.o

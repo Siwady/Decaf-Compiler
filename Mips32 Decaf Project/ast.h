@@ -548,7 +548,7 @@ public:
         this->type = type;
         this->value = value;
     }
-    void generateCode();
+    string generateCode(int i);
     DeclItemList ids;
     VarType type;
     Expr* value;
@@ -582,6 +582,7 @@ public:
     }
     string id;
     MethodType type;
+    string generateCode(int i);
     list<Statement*> statementBlock;
     ParamList params;
     DeclList declare;
@@ -592,12 +593,13 @@ typedef list<Method*> MethodList;
 
 class Program {
 public:
-    Program(DeclList *variables,MethodList *methods){
+    Program(string id,DeclList *variables,MethodList *methods){
+        this->id=id;
         this->Variables = variables;
         this->Methods = methods;
     }
-    void Initialize();
-    void RunMain();
+    string generateCode();
+    string id;
     MethodList *Methods;
     DeclList *Variables;
 };

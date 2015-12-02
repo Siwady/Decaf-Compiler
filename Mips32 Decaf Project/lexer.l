@@ -3,7 +3,7 @@
 %{
 #include <cstdlib>
 #include <cstring>
-#include "tree.h"
+#include "ast.h"
 #include "tokens.h"
 #include <string>
 

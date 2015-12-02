@@ -8,5 +8,5 @@ test2.c
 test3.c
 test4.c
 tokens.h
-tree.cpp
-tree.h
+ast.cpp
+ast.h

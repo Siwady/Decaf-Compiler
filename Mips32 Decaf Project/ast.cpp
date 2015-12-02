@@ -1,11 +1,11 @@
 
-#include "tree.h"
+#include "ast.h"
 #include <algorithm>
 #include <sstream>
 
 using namespace std;
 
-const char *temps[] = {"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9"};
+const char *temps[] = {"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9", "$t10", "$t11", "$t12", "$t13", "$t14", "$t15", "$t16", "$t17", "$t18", "$t19"};
 #define TEMP_COUNT (sizeof(temps)/sizeof(temps[0]))       
 
 int label;
@@ -44,6 +44,20 @@ void releaseTemp(string temp) {
     tempMap.erase(temp);
 }
 
+string getStringFromType(MethodType type){
+    switch (type) {
+        case M_VOID:
+            return "void";
+            break;
+        case M_INT:
+            return "int";
+            break;
+        case M_BOOLEAN:
+            return "bool";
+            break;
+    }
+    return "";
+}
 string GetIdentation(int i)
 {
     string s="";
@@ -54,14 +68,28 @@ string GetIdentation(int i)
     return s;
 }
 
-void Program::Initialize() {
+string Program::generateCode() {
 
+    stringstream ss;
+    ss<<"#class "<<id<<"{"<<endl;
+    DeclList::iterator it=this->Variables->begin();
+    while(it!=this->Variables->end()){
+        Declaration *d=*it;
+        ss<<d->generateCode(1);
+        it++;
+    }
+
+    MethodList::iterator it2=this->Methods->begin();
+    while(it2!=this->Methods->end()){
+        Method *m =*it2;
+        if(m->id.find(string("main"))!=string::npos){
+            ss<<m->generateCode(1)<<endl;
+        }
+        it2++;
+    }
+    ss<<"#}";
+    return ss.str();
 }
-
-void Program::RunMain(){
-
-}
-
 
 //-------------  GENERATE CODE  EXPRESIONS----------------------------------------------
 
@@ -326,14 +354,36 @@ string MethodExpr::generateCode(string& place, int i){
     return ss.str();
 }
 string ShiftLeftExpr::generateCode(string& place, int i){
+    string place1, place2;
+    string code1 = expr1->generateCode(place1,i);
+    string code2 = expr2->generateCode(place2,i);
     stringstream ss;
-    
+
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+
+    ss << code1 << endl <<
+    code2 << endl <<
+    GetIdentation(i)<<"sllv " << place << ", " << place1 << ", " << place2;
+
     return ss.str();
 }
 
 string ShiftRightExpr::generateCode(string& place, int i){
+    string place1, place2;
+    string code1 = expr1->generateCode(place1,i);
+    string code2 = expr2->generateCode(place2,i);
     stringstream ss;
-    
+
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+
+    ss << code1 << endl <<
+    code2 << endl <<
+    GetIdentation(i)<<"srlv " << place << ", " << place1 << ", " << place2;
+
     return ss.str();
 }
 
@@ -344,8 +394,37 @@ string RotExpr::generateCode(string& place, int i){
 }
 
 string AndExpr::generateCode(string& place, int i){
+    string place1, place2;
+    string code1 = expr1->generateCode(place1,i);
+    string code2 = expr2->generateCode(place2,i);
     stringstream ss;
-    
+
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+
+    ss << code1 << endl <<
+    code2 << endl <<
+    GetIdentation(i)<<"and " << place << ", " << place1 << ", " << place2;
+
+    return ss.str();
+}
+
+string OrExpr::generateCode(string &place, int i)
+{
+    string place1, place2;
+    string code1 = expr1->generateCode(place1,i);
+    string code2 = expr2->generateCode(place2,i);
+    stringstream ss;
+
+    releaseTemp(place1);
+    releaseTemp(place2);
+    place = newTemp();
+
+    ss << code1 << endl <<
+    code2 << endl <<
+    GetIdentation(i)<<"or " << place << ", " << place1 << ", " << place2;
+
     return ss.str();
 }
 
@@ -357,13 +436,6 @@ string ModExpr::generateCode(string &place, int i)
 }
 
 string NotExpr::generateCode(string &place, int i)
-{
-    stringstream ss;
-
-    return ss.str();
-}
-
-string OrExpr::generateCode(string &place, int i)
 {
     stringstream ss;
 
@@ -382,14 +454,45 @@ string ArrayExpr::generateCode(string &place, int i)
 
 string PrintStatement::generateCode(string label1, string label2, int i)
 {
+    string place1;
+    ExprList::iterator it=expr.begin();
+    string code;
     stringstream ss;
-
+    ss<<GetIdentation(i)<<"#-PrintStatement-\n";
+    while(it!=expr.end()){
+        Expr *e=*it;
+        code = e->generateCode(place1,i+1);
+        releaseTemp(place1);
+        ss <<code << endl <<
+        GetIdentation(i+1)<<"move $a0, " << place1 << endl<<
+        GetIdentation(i+1)<< "li $v0, 1" << endl<<
+        GetIdentation(i+1)<< "syscall" << endl<<
+        GetIdentation(i+1)<< "la $a0, newLine" << endl<<
+        GetIdentation(i+1)<< "li $v0, 4" << endl<<
+        GetIdentation(i+1)<< "syscall" << endl;
+        it++;
+    }
     return ss.str();
 }
 
 string AssignStatement::generateCode(string label1, string label2, int i)
 {
+    if (sTable.find(id) == sTable.end()) {
+        printf("Variable %s doesn't exist.\n",id.c_str());
+        exit(0);
+    }
+
+    string place1;
+    string code = expr->generateCode(place1,i+1);
     stringstream ss;
+    string place ="";
+
+    place=newTemp();
+    releaseTemp(place1);
+    ss << GetIdentation(i)<<"#-AssignStatement-\n"<<code << endl <<
+    GetIdentation(i+1)<<"la " << place << ", " << id << endl <<
+    GetIdentation(i+1)<<"sw " << place1 << ", " << "0(" << place << ")" << endl;
+    releaseTemp(place);
 
     return ss.str();
 }
@@ -507,24 +610,53 @@ string ContinueStatement::generateCode(string label1, string label2, int i) {
     return ss.str();
 }
 
-void Declaration::generateCode() {
+string Declaration::generateCode(int i) {
+    string place,code,place1;
+    stringstream ss;
     DeclItemList::iterator it=ids.begin();
-
     while(it!=ids.end()){
-        DeclItem *i=*it;
-        if (sTable.find(i->id) != sTable.end()) {
-            printf("Variable %s already exist.\n",i->id.c_str());
+        DeclItem *item=*it;
+        if (sTable.find(item->id) != sTable.end()) {
+            printf("Variable %s already exist.\n",item->id.c_str());
             exit(0);
         }
         VValue v;
         v.type=type;
-        sTable[i->id] =v;
-        if(this->type==INT){
-            cout << i->id << ": .word 0" << endl;
-        }else{
-            cout << i->id << ": .double 0.0" << endl;
+        sTable[item->id] =v;
+        cout << item->id << ": .word 0" << endl;
+        if(value!=0){
+            code = this->value->generateCode(place1,i+1);
+
+            place =newTemp();
+            releaseTemp(place1);
+
+            ss << GetIdentation(i)<<"#-AssignStatement-\n"<<code << endl <<
+            GetIdentation(i+1)<<"la " << place << ", " << item->id << endl <<
+            GetIdentation(i+1)<<"sw " << place1 << ", " << "0(" << place << ")" << endl;
+            releaseTemp(place);
         }
-        
         it++;
     }
+    return ss.str();
+}
+
+string Method::generateCode(int i) {
+    stringstream ss;
+    ss<<"\n"<<GetIdentation(i)<<"#"<<getStringFromType(type)<<" "<<id<<"(){"<<endl;
+    DeclList::iterator it=this->declare.begin();
+    while(it!=this->declare.end()){
+        Declaration *d =*it;
+        ss<<d->generateCode(i+1);
+        it++;
+    }
+    string lab1,lab2;
+
+    StatementList::iterator it2=this->statementBlock.begin();
+    while(it2!=this->statementBlock.end()){
+        Statement*s =*it2;
+        ss<<s->generateCode(lab1,lab2,i+1)<<endl;
+        it2++;
+    }
+    ss<<GetIdentation(i)<<"#}";
+    return ss.str();
 }

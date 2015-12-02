@@ -5,9 +5,12 @@ class GreatestCommonDivisor {
         int x, y, z,w;
         x = h;
         y = i;
-        z = gcd(x, y);
-        w= gcd(12, 20);
-        print "z=",z,"\nw=",w,"\n";
+        z = 10;
+        w= 20;
+        print z;
+		print w;
+		print x;
+		print y;
         
     }
     

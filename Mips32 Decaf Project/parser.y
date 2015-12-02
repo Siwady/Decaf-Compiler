@@ -1,7 +1,7 @@
 %{
 #include <cstdio>
 #include <string>
-#include "tree.h"
+#include "ast.h"
 using namespace std;
 extern int line;
 
@@ -63,7 +63,7 @@ Program *program;
 
 %%
 
-program: T_CLASS T_ID '{' opt_declarations opt_methods'}'{ program=new Program($4,$5);}
+program: T_CLASS T_ID '{' opt_declarations opt_methods'}'{ program=new Program($2,$4,$5);}
 
 						  
 
