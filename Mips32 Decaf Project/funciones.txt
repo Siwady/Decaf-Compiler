@@ -1,0 +1,47 @@
+GEneracion de codigo con procedimientos
+------------------------------------------
+
+intrucciones para el manejo de procedimientos en mips
+
+	-los parametros se pasan en $a0 - $a3 si son 4 o menos.
+	
+	- si hay mas de 4 parametros se pasan en la pila.
+	
+	-utilizar jal para transferir el control al procedimiento.
+	
+	-utilizar jr para transferir el control al llamador.
+
+
+	funcion  test1 -> utiliza $s0 ,$s1, $s2
+	
+		-prologo de test1
+		-codigo de test1
+		-epilogo de test1
+		
+		<Prologo>
+			-Reservar memoria en la pila
+			-Variables locales
+			-Registros.
+			push $fp;   mov $fp, $sp
+			addi $sp, $sp, - Tamaño
+			sw $s0, 0($sp)
+			sw $s1, 4($sp)
+			sw $s2, 8($sp)
+			
+			
+			
+		IDExpr::generateCode(ExprContext das){
+		
+			if(id is global){
+				la $t0,id
+				lw $t0,$t0
+			}else{
+				offset=localVars[id];
+				ss<<"lw $s0, -"<<offset<<"($fp)"<<endl;
+				lugar="$s0";
+				
+				
+				
+				
+			}
+		}

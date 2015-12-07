@@ -7,11 +7,46 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <sstream>
 #include <list>
 #include <map>
 
 using namespace std;
 
+#define IMPLEMENT_BINARY_EXPR_TOSTRING(OP, PRECEDENCE)  \
+    string toStringHelper(int &prec) {                  \
+        stringstream ss;                                \
+        string str1, str2;                              \
+        int prec1, prec2;                               \
+                                                        \
+        str1 = expr1->toStringHelper(prec1);            \
+        str2 = expr2->toStringHelper(prec2);            \
+        if (prec1 < PRECEDENCE)                         \
+            str1 = addParenthesis(str1);                \
+        if (prec2 < PRECEDENCE)                         \
+            str2 = addParenthesis(str2);                \
+                                                        \
+        ss << str1 << " " OP " " << str2;               \
+        prec = PRECEDENCE;                              \
+        return ss.str();                                \
+    }
+
+inline string addParenthesis(string str){
+        string ss;
+        ss="( "+str+" )";
+        return ss;
+}
+
+inline string ConvertToString(int num){
+    ostringstream convert;
+    convert << num;
+    return convert.str();
+}
+inline string ConvertToString(char ch){
+    ostringstream convert;
+    convert << ch;
+    return convert.str();
+}
 
 typedef list<string> IdList;
 
@@ -26,7 +61,6 @@ enum MethodType {
 struct VValue {
 
     int IntValue() {
-        
         return u.ivalue;
     }
 
@@ -97,6 +131,7 @@ public:
 
     DeclItem(string id) {
         this-> id = id;
+        this->dimension=0;
     }
     
     DeclItem(string id, int dimension) {
@@ -111,6 +146,11 @@ typedef list<DeclItem*> DeclItemList;
 class Expr {
 public:
     virtual string generateCode(string &place, int i) = 0;
+    virtual string toStringHelper(int &prec) = 0;
+    string toString() {
+        int tmp;
+        return toStringHelper(tmp);
+    }
 };
 
 typedef list<Expr*> ExprList;
@@ -134,6 +174,7 @@ public:
     }
 
     string generateCode(string &place, int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("<", 40)
 };
 
 class GreaterThanExpr : public BinaryExpr {
@@ -143,6 +184,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING(">", 40)
 };
 
 class LessThanEqualExpr : public BinaryExpr {
@@ -152,6 +194,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("<=", 40)
 };
 
 class GreaterThanEqualExpr : public BinaryExpr {
@@ -161,6 +204,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING(">=", 40)
 };
 
 class NotEqualExpr : public BinaryExpr {
@@ -170,6 +214,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("!=", 30)
 };
 
 class EqualExpr : public BinaryExpr {
@@ -179,6 +224,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("==", 30)
 };
 
 class AddExpr : public BinaryExpr {
@@ -188,6 +234,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("+", 70)
 };
 
 class SubExpr : public BinaryExpr {
@@ -197,6 +244,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("-", 70)
 };
 
 class MultExpr : public BinaryExpr {
@@ -206,6 +254,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("*", 80)
 };
 
 class DivExpr : public BinaryExpr {
@@ -215,6 +264,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("/", 80)
 };
 
 class NegativeExpr : public Expr {
@@ -226,6 +276,7 @@ public:
 
     Expr *expr;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec){ prec = 100; return "-"+expr->toString(); }
 };
 
 class NotExpr : public Expr {
@@ -237,6 +288,7 @@ public:
 
     Expr *expr;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec){ prec = 90; return "!"+expr->toString();}
 };
 
 class OrExpr : public BinaryExpr {
@@ -246,6 +298,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("||", 10)
 };
 
 class AndExpr : public BinaryExpr {
@@ -255,6 +308,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("||", 20)
 };
 
 class ShiftLeftExpr : public BinaryExpr {
@@ -264,6 +318,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("<<", 50)
 };
 
 class RotExpr : public BinaryExpr {
@@ -273,6 +328,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING("rot", 50)
 };
 
 class ModExpr : public BinaryExpr {
@@ -282,6 +338,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+     IMPLEMENT_BINARY_EXPR_TOSTRING("%", 60)
 };
 
 class ShiftRightExpr : public BinaryExpr {
@@ -291,6 +348,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    IMPLEMENT_BINARY_EXPR_TOSTRING(">>", 50)
 };
 
 class IntExpr : public Expr {
@@ -303,6 +361,7 @@ public:
 
     VValue value;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec) { prec = 110; return ConvertToString(value.IntValue()); }
 };
 
 class BoolExpr : public Expr {
@@ -315,6 +374,7 @@ public:
 
     VValue value;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec){ prec = 110; return value.BoolValue()?"True":"False";}
 };
 
 class IdExpr : public Expr {
@@ -326,6 +386,7 @@ public:
 
     string id;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec) { prec = 110; return id; }
 };
 
 class ArrayExpr : public Expr {
@@ -339,6 +400,7 @@ public:
     string id;
     Expr* dim;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec) { prec = 110; return id+"["+dim->toString()+"]"; }
 };
 
 class StrExpr : public Expr {
@@ -350,6 +412,7 @@ public:
 
     string val;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec){ prec = 110; return "\""+val+"\""; }
 };
 
 class CharExpr : public Expr {
@@ -362,6 +425,7 @@ public:
 
     VValue value;
     string generateCode(string &place, int i);
+    string toStringHelper(int &prec){ prec = 110; return "\'"+ConvertToString(value.CharValue())+ "\'"; }
 };
 
 class MethodExpr : public Expr {
@@ -375,6 +439,22 @@ public:
     string id;
     ExprList exprs;
     string generateCode(string &place,int i);
+    string toStringHelper(int &prec){
+        string result="";
+        result+=id+"(";
+        ExprList::iterator it=exprs.begin();
+        while(it!=exprs.end()){
+            Expr *e=*it;
+            if(it==exprs.begin()){
+                result+=e->toString();
+            }else{
+                result+=","+e->toString();
+            }
+            it++;
+        }
+        result+=")";
+        return result;
+    }
 };
 
 enum StatementKind {
