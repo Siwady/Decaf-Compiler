@@ -3,8 +3,7 @@ class GreatestCommonDivisor {
     void main() {
 		int i=6;
 		int j=10;
-        
-		print i%j;
+		print 'a';
 		for(i=0;i<10;i=i+1){
         	print i;
 			if(i==5){
@@ -20,6 +19,6 @@ class GreatestCommonDivisor {
         }
     }
     void printhola(){
-        print "hola.\n";
+        print 10;
     }
 }

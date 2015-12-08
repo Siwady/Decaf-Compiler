@@ -151,6 +151,7 @@ public:
         int tmp;
         return toStringHelper(tmp);
     }
+    VarType type;
 };
 
 typedef list<Expr*> ExprList;
@@ -643,6 +644,7 @@ public:
     }
     string id;
     VarType type;
+    string generateCode(int i);
 };
 
 typedef list<Param*> ParamList;

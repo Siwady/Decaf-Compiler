@@ -8,10 +8,13 @@ using namespace std;
 const char *temps[] = {"$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7", "$t8", "$t9"};
 #define TEMP_COUNT (sizeof(temps)/sizeof(temps[0]))       
 
-int label;
+int Label,ChLabel,StrLabel;
 map<string, int> tempMap;
 map<string, VValue> sTable;
 map<string, Method*> mTable;
+map<string,string> StringConstants; //String Constants.
+map<char,string> CharConstants;     //Char Constants.
+
 string forAssignCode;
 VValue returnValue;
 VValue st={st.type = INT,st.u.ivalue = 0, st.isArray=false,st.ArraySize=0};
@@ -36,7 +39,19 @@ string newTemp() {
 string newLabel() {
     string s = "Label";
     stringstream sstm;
-    sstm << s << label++;
+    sstm << s << Label++;
+    return sstm.str();
+}
+string newString() {
+    string s = "Str";
+    stringstream sstm;
+    sstm << s << StrLabel++;
+    return sstm.str();
+}
+string newChar() {
+    string s = "Ch";
+    stringstream sstm;
+    sstm << s << ChLabel++;
     return sstm.str();
 }
 
@@ -96,16 +111,22 @@ string Program::generateCode() {
         ss<<d->generateCode(1);
         it++;
     }
+    ss<<GetIdentation(1)<<"jal main \n"<<
+        GetIdentation(1)<<"j EndClass\n";
 
     MethodList::iterator it2=this->Methods->begin();
     while(it2!=this->Methods->end()){
         Method *m =*it2;
-        if(m->id.find(string("main"))!=string::npos){
+        //if(m->id.find(string("main"))!=string::npos){
             ss<<m->generateCode(1)<<endl;
-        }
+        //}
         it2++;
     }
-    ss<<"#}";
+    ss<<"#}\n"<<
+    "EndClass:\n"
+     << "# Exit\n"
+     << "li $v0, 10\n"
+     << "syscall\n";;
     return ss.str();
 }
 
@@ -124,7 +145,7 @@ string AddExpr::generateCode(string& place, int i){
     ss << code1 << endl <<
           code2 << endl <<
           GetIdentation(i)<<"add " << place << ", " << place1 << ", " << place2;
-          
+    this->type=INT;
     return ss.str();
 }
 
@@ -142,7 +163,7 @@ string SubExpr::generateCode(string &place, int i)
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"sub " << place << ", " << place1 << ", " << place2;
-    
+    this->type=INT;
     return ss.str();
 }
 
@@ -162,6 +183,7 @@ string MultExpr::generateCode(string &place, int i)
     GetIdentation(i)<<"mult " << place1 << ", " << place2 << endl <<
     GetIdentation(i)<<"mflo " << place;
 
+    this->type=INT;
     return ss.str();
 }
 
@@ -181,6 +203,7 @@ string DivExpr::generateCode(string &place, int i)
     GetIdentation(i)<<"div " << place1 << ", " << place2 << endl <<
     GetIdentation(i)<<"mflo " << place;
 
+    this->type=INT;
     return ss.str();
 }
 
@@ -198,7 +221,7 @@ string LessThanExpr::generateCode(string &place, int i)
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"slt " << place << ", " << place1 << ", " << place2;
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 string GreaterThanExpr::generateCode(string &place, int i)
@@ -215,7 +238,7 @@ string GreaterThanExpr::generateCode(string &place, int i)
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"slt " << place << ", " << place2 << ", " << place1;
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -235,7 +258,7 @@ string LessThanEqualExpr::generateCode(string &place, int i)
     GetIdentation(i)<<"slt "  << place << ", " << place2 << ", " << place1 <<"\n"<<
     GetIdentation(i)<<"nor "  << place << ", " << place  << ", " << place  << "\n"<<
     GetIdentation(i)<<"addi " << place << ", " << place  << ", 2";
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -255,7 +278,7 @@ string GreaterThanEqualExpr::generateCode(string &place, int i)
     GetIdentation(i)<<"slt "  << place << ", " << place1 << ", " << place2 <<"\n"<<
     GetIdentation(i)<<"nor "  << place << ", " << place  << ", " << place  <<"\n"<<
     GetIdentation(i)<<"addi " << place << ", " << place  << ", 2";
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 string EqualExpr::generateCode(string &place, int i)
@@ -279,7 +302,7 @@ string EqualExpr::generateCode(string &place, int i)
     GetIdentation(i)<<true_l<< ":\n"  <<
     GetIdentation(i)<<"li " << place  << ", " << "1\n"  <<
     GetIdentation(i)<<end_l << ":\n";
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -304,7 +327,7 @@ string NotEqualExpr::generateCode(string &place, int i)
     GetIdentation(i)<<true_l<< ":\n"  <<
     GetIdentation(i)<<"li " << place  << ", " << "0\n"  <<
     GetIdentation(i)<<end_l << ":\n";
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -315,7 +338,7 @@ string IntExpr::generateCode(string &place, int i)
     place = newTemp();
     
     ss << GetIdentation(i)<<"li " << place << ", " << value.IntValue();
-    
+    this->type=INT;
     return ss.str();
 }
 string BoolExpr::generateCode(string &place, int i)
@@ -325,7 +348,7 @@ string BoolExpr::generateCode(string &place, int i)
     place = newTemp();
     
     ss <<GetIdentation(i)<< "li " << place << ", " << value.BoolValue();
-    
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -359,6 +382,7 @@ string ArrayExpr::generateCode(string &place, int i)
     releaseTemp(place2);
     releaseTemp(place3);
     releaseTemp(place4);
+    this->type=sTable[id].type;
     return ss.str();
 }
 
@@ -380,32 +404,46 @@ string IdExpr::generateCode(string &place, int i)
     ss <<
     GetIdentation(i)<<"la " << place << ", " << id << endl <<
     GetIdentation(i)<<"lw " << place << ", " << "0("<< place << ")" << endl;
-
+    this->type=sTable[id].type;
 	return ss.str();
 		
 }
 
 string NegativeExpr::generateCode(string& place, int i){
     stringstream ss;
-    
+
+    place = newTemp();
+
+   // ss << GetIdentation(i)<<"la " << place << ", -" << this->expr-IntValue();
+    this->type=INT;
     return ss.str();
 }
 
 string CharExpr::generateCode(string& place, int i){
     stringstream ss;
-    
+    this->type=CHARACTER;
+
+    place = newTemp();
+    string lab=newChar();
+    CharConstants[this->value.CharValue()]=lab;
+    ss << "lb " <<place<<", "<<lab<<endl;
     return ss.str();
 }
 
 string StrExpr::generateCode(string& place, int i){
     stringstream ss;
-    
+    this->type=STRINGS;
+    place = newTemp();
+    string lab=newString();
+    StringConstants[this->val]=lab;
+    ss << "la " <<place<<", "<<lab<<endl;
     return ss.str();
+
 }
 
 string MethodExpr::generateCode(string& place, int i){
     stringstream ss;
-    
+
     return ss.str();
 }
 string ShiftLeftExpr::generateCode(string& place, int i){
@@ -421,7 +459,7 @@ string ShiftLeftExpr::generateCode(string& place, int i){
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"sllv " << place << ", " << place1 << ", " << place2;
-
+    this->type=INT;
     return ss.str();
 }
 
@@ -438,13 +476,13 @@ string ShiftRightExpr::generateCode(string& place, int i){
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"srlv " << place << ", " << place1 << ", " << place2;
-
+    this->type=INT;
     return ss.str();
 }
 
 string RotExpr::generateCode(string& place, int i){
     stringstream ss;
-    
+    this->type=INT;
     return ss.str();
 }
 
@@ -461,7 +499,7 @@ string AndExpr::generateCode(string& place, int i){
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"and " << place << ", " << place1 << ", " << place2;
-
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -479,7 +517,7 @@ string OrExpr::generateCode(string &place, int i)
     ss << code1 << endl <<
     code2 << endl <<
     GetIdentation(i)<<"or " << place << ", " << place1 << ", " << place2;
-
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -498,14 +536,14 @@ string ModExpr::generateCode(string &place, int i)
     code2 << endl <<
     GetIdentation(i)<<"div " << place1 << ", " << place2 << endl <<
     GetIdentation(i)<<"mfhi " << place;
-
+    this->type=INT;
     return ss.str();
 }
 
 string NotExpr::generateCode(string &place, int i)
 {
     stringstream ss;
-
+    this->type=BOOLEAN;
     return ss.str();
 }
 
@@ -537,13 +575,36 @@ string PrintStatement::generateCode(string label1, string label2, int i)
         Expr *e=*it;
         code = e->generateCode(place1,i+1);
         releaseTemp(place1);
-        ss <<code << endl <<
-        GetIdentation(i+1)<<"move $a0, " << place1 << endl<<
-        GetIdentation(i+1)<< "li $v0, 1" << endl<<
-        GetIdentation(i+1)<< "syscall" << endl<<
-        GetIdentation(i+1)<< "la $a0, newLine" << endl<<
-        GetIdentation(i+1)<< "li $v0, 4" << endl<<
-        GetIdentation(i+1)<< "syscall" << endl;
+        ss <<code << endl ;
+        switch (e->type) {
+        case INT:
+            ss<<GetIdentation(i+1)<<"move $a0, " << place1 << endl<<
+            GetIdentation(i+1)<< "li $v0, 1" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl<<
+            GetIdentation(i+1)<< "la $a0, newLine" << endl<<
+            GetIdentation(i+1)<< "li $v0, 4" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl;
+            break;
+
+        case STRINGS:
+            ss<<GetIdentation(i+1)<<"move $a0, " << place1 << endl<<
+            GetIdentation(i+1)<< "li $v0, 4" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl<<
+            GetIdentation(i+1)<< "la $a0, newLine" << endl<<
+            GetIdentation(i+1)<< "li $v0, 4" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl;
+            break;
+
+        case CHARACTER:
+            ss<<GetIdentation(i+1)<<"move $a0, " << place1 << endl<<
+            GetIdentation(i+1)<< "li $v0, 11" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl<<
+            GetIdentation(i+1)<< "la $a0, newLine" << endl<<
+            GetIdentation(i+1)<< "li $v0, 4" << endl<<
+            GetIdentation(i+1)<< "syscall" << endl;
+            break;
+        }
+
         it++;
     }
     return ss.str();
@@ -561,8 +622,11 @@ string AssignStatement::generateCode(string label1, string label2, int i)
     stringstream ss;
     string place ="";
 
+    if(expr->type!=sTable[id].type){
+        printf("Incompatible types, variable %s expect %s type, found %s.\n",id.c_str(),getStringFromType(sTable[id].type).c_str(),getStringFromType(expr->type).c_str());
+        exit(0);
+    }
 
-    //FALTA VALIDAR QUE SEAN DEL MISMO TIPO DE DATO!!!.
     place=newTemp();
 
     if(dim==0){
@@ -794,7 +858,10 @@ string Declaration::generateCode(int i) {
         }
         if(value!=0){
             code = this->value->generateCode(place1,i+1);
-
+            if(value->type!=sTable[item->id].type){
+                printf("Incompatible types, variable %s expect %s type, found %s.\n",item->id.c_str(),getStringFromType(sTable[item->id].type).c_str(),getStringFromType(value->type).c_str());
+                exit(0);
+            }
             place =newTemp();
             releaseTemp(place1);
 
@@ -820,13 +887,22 @@ string Declaration::generateCode(int i) {
 
 string Method::generateCode(int i) {
     stringstream ss;
-    ss<<"\n"<<GetIdentation(i)<<"#"<<getStringFromType(type)<<" "<<id<<"(){"<<endl;
+    ss<<"\n"<<GetIdentation(i)<<"#"<<getStringFromType(type)<<" "<<id<<"(){"<<endl<<
+        GetIdentation(i)<<id<<":\n";
     DeclList::iterator it=this->declare.begin();
     while(it!=this->declare.end()){
         Declaration *d =*it;
         ss<<d->generateCode(i+1);
         it++;
     }
+
+    ParamList::iterator it3=this->params.begin();
+    while(it3!=this->params.end()){
+        Param *p =*it3;
+        ss<<p->generateCode(i+1);
+        it3++;
+    }
+
     string lab1,lab2;
 
     StatementList::iterator it2=this->statementBlock.begin();
@@ -835,6 +911,22 @@ string Method::generateCode(int i) {
         ss<<s->generateCode(lab1,lab2,i+1)<<endl;
         it2++;
     }
-    ss<<GetIdentation(i)<<"#}";
+    ss<<GetIdentation(i+1)<<"jr $ra\n"<<
+        GetIdentation(i)<<"#}";
+    return ss.str();
+}
+
+
+string Param::generateCode(int i)
+{
+    stringstream ss;
+    if (sTable.find(id) != sTable.end()) {
+        printf("Variable %s already exist.\n",id.c_str());
+        exit(0);
+    }
+    VValue v;
+    v.type=type;
+    sTable[id] =v;
+    cout << id << ": .word 0" << endl;
     return ss.str();
 }

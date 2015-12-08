@@ -1,109 +1,46 @@
 .data
 newLine: .asciiz "\n"
-j: .word 0,0,0,0,0,0,0,0,0,0
-b: .word 0
+h: .word 0
 i: .word 0
+j: .word 0
+a: .word 0
+b: .word 0
+Ch0: .byte 'a'
 .text
 #class GreatestCommonDivisor{
-    # int j;
-    # bool b=True;
+    # bool h=True;
         li $t0, 1
-        la $t1, b
+        la $t1, h
         sw $t0, 0($t1)
+    jal main 
+    j EndClass
 
     #void main(){
-        # int i;
-        # j[0]=10;
+    main:
+        # int i=6;
+            li $t0, 6
+            la $t1, i
+            sw $t0, 0($t1)
+        # int j=10;
             li $t0, 10
-        li $t4, 0
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
+            la $t1, j
+            sw $t0, 0($t1)
+        #print 'a';
+lb $t0, Ch0
 
-        # j[1]=20;
-            li $t0, 20
-        li $t4, 1
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
+            move $a0, $t0
+            li $v0, 11
+            syscall
+            la $a0, newLine
+            li $v0, 4
+            syscall
 
-        # j[2]=30;
-            li $t0, 30
-        li $t4, 2
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
+        #for(i < 10){
+        # i=0;
+            li $t0, 0
+            la $t2, i
+            sw $t0, 0($t2)
 
-        # j[3]=40;
-            li $t0, 40
-        li $t4, 3
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[4]=50;
-            li $t0, 50
-        li $t4, 4
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[5]=60;
-            li $t0, 60
-        li $t4, 5
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[6]=70;
-            li $t0, 70
-        li $t4, 6
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[7]=80;
-            li $t0, 80
-        li $t4, 7
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[8]=90;
-            li $t0, 90
-        li $t4, 8
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        # j[9]=100;
-            li $t0, 100
-        li $t4, 9
-        la $t2, j
-        add $t4, $t4, $t4
-        add $t4, $t4, $t4
-        add $t3, $t4, $t2
-            sw $t0, 0($t3)
-
-        #while(i < 10){
             Label0:
                 la $t0, i
                 lw $t0, 0($t0)
@@ -111,35 +48,114 @@ i: .word 0
                 li $t1, 10
                 slt $t0, $t0, $t1
                 beq $t0, $zero, Label1
-                #print j[i];
-                    la $t3, j
-                    la $t5, i
-                    lw $t5, 0($t5)
-                    add $t2, $t5, $t5
-                    add $t2, $t2, $t2
-                    add $t4, $t2, $t3
-                    lw $t6, 0($t4)
+                #print i;
+                    la $t0, i
+                    lw $t0, 0($t0)
 
-                    move $a0, $t6
+                    move $a0, $t0
+                    li $v0, 1
+                    syscall
+                    la $a0, newLine
+                    li $v0, 4
+                    syscall
+                #if(i == 5){
+                    la $t0, i
+                    lw $t0, 0($t0)
+
+                    li $t2, 5
+                    beq $t0, $t2, Label2
+                    li $t0, 0
+                    j Label3
+                    Label2:
+                    li $t0, 1
+                    Label3:
+
+                    add $t2, $zero, $zero
+                    beq $t0, $t2, Label4
+                # i=i + 1;
+                    la $t0, i
+                    lw $t0, 0($t0)
+
+                    li $t2, 1
+                    add $t0, $t0, $t2
+                    la $t2, i
+                    sw $t0, 0($t2)
+
+                    # continue;
+                        j Label0
+
+                    j Label5
+                #}else{
+                    Label4: 
+                #}
+                Label5: 
+                #print i;
+                    la $t0, i
+                    lw $t0, 0($t0)
+
+                    move $a0, $t0
                     li $v0, 1
                     syscall
                     la $a0, newLine
                     li $v0, 4
                     syscall
                 # i=i + 1;
-                    la $t2, i
-                    lw $t2, 0($t2)
+                    la $t0, i
+                    lw $t0, 0($t0)
 
-                    li $t3, 1
-                    add $t2, $t2, $t3
-                    la $t3, i
-                    sw $t2, 0($t3)
+                    li $t2, 1
+                    add $t0, $t0, $t2
+                    la $t2, i
+                    sw $t0, 0($t2)
                 j Label0
         #}
         Label1: 
 
+        jr $ra
+    #}
+
+    #int gcd(){
+    gcd:
+        #if(b == 0){
+            la $t0, b
+            lw $t0, 0($t0)
+
+            li $t1, 0
+            beq $t0, $t1, Label6
+            li $t0, 0
+            j Label7
+            Label6:
+            li $t0, 1
+            Label7:
+
+            add $t1, $zero, $zero
+            beq $t0, $t1, Label8
+
+            j Label9
+        #}else{
+            Label8: 
+        #}
+        Label9: 
+
+        jr $ra
+    #}
+
+    #void printhola(){
+    printhola:
+        #print 10;
+            li $t0, 10
+            move $a0, $t0
+            li $v0, 1
+            syscall
+            la $a0, newLine
+            li $v0, 4
+            syscall
+
+        jr $ra
     #}
 #}
+EndClass:
 # Exit
 li $v0, 10
 syscall
+
