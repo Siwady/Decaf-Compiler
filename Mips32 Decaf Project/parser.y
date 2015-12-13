@@ -79,13 +79,13 @@ method_list: method_list  method  {$$=$1;  $$->push_back($2);}
 ;
 method:type T_ID '(' params ')' '{' opt_declarations statement_list '}'	{
 																			if($1==INT){
-																				$$=new Method(M_INT,$2,*$4,*$7,*$8);
+                                                                                $$=new Method(INT,$2,*$4,*$7,*$8);
 																			}else
 																			{	
-																				$$=new Method(M_BOOLEAN,$2,*$4,*$7,*$8);
+                                                                                $$=new Method(BOOLEAN,$2,*$4,*$7,*$8);
 																			}												
 																		}
-	  | T_VOID T_ID '(' ')' '{' opt_declarations statement_list '}'{ $$=new Method(M_VOID,$2,*(new ParamList()),*$6,*$7);}
+      | T_VOID T_ID '(' ')' '{' opt_declarations statement_list '}'{ $$=new Method(VOID,$2,*(new ParamList()),*$6,*$7);}
 
 ;
 

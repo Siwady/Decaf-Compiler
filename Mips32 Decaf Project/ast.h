@@ -31,6 +31,28 @@ using namespace std;
         return ss.str();                                \
     }
 
+enum VarType {
+    INT, BOOLEAN, STRINGS, CHARACTER, FUNCTION, ARRAY,VOID
+};
+
+inline string getStringFromType(VarType type){
+    switch (type) {
+        case INT:
+            return "int";
+            break;
+        case BOOLEAN:
+            return "bool";
+            break;
+        case STRINGS :
+            return "string";
+            break;
+        case CHARACTER:
+            return "char";
+            break;
+    }
+    return "";
+}
+
 inline string addParenthesis(string str){
         string ss;
         ss="( "+str+" )";
@@ -50,12 +72,9 @@ inline string ConvertToString(char ch){
 
 typedef list<string> IdList;
 
-enum VarType {
-    INT, BOOLEAN, STRINGS, CHARACTER, FUNCTION, ARRAY
-};
-
-enum MethodType {
-    M_VOID, M_INT, M_BOOLEAN
+struct mVariable{
+    int Offset;
+    VarType type;
 };
 
 struct VValue {
@@ -426,7 +445,30 @@ public:
 
     VValue value;
     string generateCode(string &place, int i);
-    string toStringHelper(int &prec){ prec = 110; return "\'"+ConvertToString(value.CharValue())+ "\'"; }
+    string toStringHelper(int &prec){
+        prec = 110;
+        switch (value.CharValue()) {
+        case '\n':
+            return "\'\\n\'";
+            break;
+        case '\t':
+            return "\'\\t\'";
+            break;
+        case '\r':
+            return "\'\\r\'";
+            break;
+        case '\a':
+            return "\'\\a\'";
+            break;
+        case '\\':
+            printf("unknown escape character. \n");
+            exit(0);
+            break;
+        default:
+            return "\'"+ConvertToString(value.CharValue())+ "\'";
+        }
+
+    }
 };
 
 class MethodExpr : public Expr {
@@ -475,6 +517,7 @@ class Statement {
 public:
     virtual StatementKind getKind() = 0;
     virtual string generateCode (string label1,string label2,int i) = 0;
+    virtual string toString()=0;
 };
 
 typedef list<Statement*> StatementList;
@@ -491,7 +534,7 @@ public:
     }
     string generateCode (string label1,string label2,int i);
     Expr* expr;
-    
+    string toString(){ return "return "+expr->toString()+";";}
 };
 
 class ContinueStatement : public Statement {
@@ -504,6 +547,7 @@ public:
         return CONTINUE_STATEMENT;
     }
     string generateCode (string label1,string label2,int i);
+    string toString(){return "continue;";}
 };
 
 class BreakStatement : public Statement {
@@ -516,6 +560,7 @@ public:
         return BREAK_STATEMENT;
     }
     string generateCode (string label1,string label2,int i);
+    string toString(){return "break;";}
 };
 
 class MethodStatement : public Statement {
@@ -533,6 +578,21 @@ public:
     
     string id;
     ExprList exprs;
+    string toString(){
+        string exp="";
+        ExprList::iterator it=exprs.begin();
+        while(it!=exprs.end()){
+            Expr *e=*it;
+            if(it==exprs.begin()){
+                exp+=e->toString();
+            }else{
+                exp+=","+e->toString();
+            }
+            it++;
+        }
+
+        return id+"("+exp+")";
+    }
 };
 
 class PrintStatement : public Statement {
@@ -547,6 +607,20 @@ public:
     }
     string generateCode (string label1,string label2,int i);
     ExprList expr;
+    string toString(){
+        string exp="";
+        ExprList::iterator it=expr.begin();
+        while(it!=expr.end()){
+            Expr *e=*it;
+            if(it==expr.begin()){
+                exp+=e->toString();
+            }else{
+                exp+=","+e->toString();
+            }
+            it++;
+        }
+        return "print "+exp+";";
+    }
 };
 
 class AssignStatement : public Statement {
@@ -565,6 +639,15 @@ public:
     string id;
     Expr *expr;
     Expr *dim;
+    string toString(){
+        string exp="";
+        if(dim==0){
+            exp+=id+" = "+expr->toString();
+        }else{
+            exp+=id+"["+dim->toString()+"] = "+expr->toString();
+        }
+        return exp;
+    }
 };
 
 class IfStatement : public Statement {
@@ -583,6 +666,7 @@ public:
     Expr *cond;
     list<Statement *>trueBlock;
     list<Statement *>falseBlock;
+    string toString(){return "if("+cond->toString()+"){\n";}
 };
 
 class WhileStatement : public Statement {
@@ -599,6 +683,7 @@ public:
     string generateCode (string label1,string label2,int i);
     Expr *cond;
     list<Statement *>statementBlock;
+    string toString(){return "while("+cond->toString()+"){\n";}
 };
 
 class ForStatement : public Statement {
@@ -619,6 +704,32 @@ public:
     Expr *cond;
     StatementList finalAssignStatement;
     list<Statement *> statementBlock;
+    string toString(){
+        string assign1="";
+        string assign2="";
+        StatementList::iterator it=assignStatement.begin();
+        while(it!=assignStatement.end()){
+            Statement*s=*it;
+            if(it==assignStatement.begin()){
+                assign1+=s->toString();
+            }else{
+                assign1+=","+s->toString();
+            }
+            it++;
+        }
+        StatementList::iterator it2=finalAssignStatement.begin();
+        while(it2!=finalAssignStatement.end()){
+            Statement*s=*it2;
+            if(it2==finalAssignStatement.begin()){
+                assign2+=s->toString();
+            }else{
+                assign2+=","+s->toString();
+            }
+            it2++;
+        }
+
+        return "for("+assign1+"; "+cond->toString()+"; "+assign2+"){\n";
+    }
 };
 
 class Declaration {
@@ -630,6 +741,7 @@ public:
         this->value = value;
     }
     string generateCode(int i);
+    string generateInMethodCode(int i, int &offset);
     DeclItemList ids;
     VarType type;
     Expr* value;
@@ -644,7 +756,10 @@ public:
     }
     string id;
     VarType type;
-    string generateCode(int i);
+    void generateCode(int offset);
+    string toString(){
+        return getStringFromType(this->type)+" "+this->id;
+    }
 };
 
 typedef list<Param*> ParamList;
@@ -655,20 +770,37 @@ public:
     Method(){
     
     }
-    Method(MethodType type, string id, ParamList params, DeclList declare, list<Statement*> statementBlock) {
+    Method(VarType type, string id, ParamList params, DeclList declare, list<Statement*> statementBlock) {
         this->id = id;
         this->type = type;
         this->statementBlock = statementBlock;
         this->params = params;
         this->declare = declare;
+        this->offset=(this->params.size()+this->declare.size()+1)*4;
+
     }
     string id;
-    MethodType type;
+    VarType type;
     string generateCode(int i);
     list<Statement*> statementBlock;
     ParamList params;
     DeclList declare;
-    map<string, VValue> LTable;
+    int offset;
+    map<string, mVariable> LTable;
+    string toString(){
+        string parameters="";
+        ParamList::iterator it=params.begin();
+        while(it!=params.end()){
+            Param *p=*it;
+            if(it==params.begin()){
+                parameters+=p->toString();
+            }else{
+                parameters+=","+p->toString();
+            }
+            it++;
+        }
+        return getStringFromType(type)+" "+id+"("+parameters+"){";
+    }
 };
 typedef list<Method*> MethodList;
 
@@ -684,6 +816,7 @@ public:
     string id;
     MethodList *Methods;
     DeclList *Variables;
+    string toString(){return "class "+id+"{";}
 };
 
 typedef list<AssignStatement*> AssignList;

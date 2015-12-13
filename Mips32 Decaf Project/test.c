@@ -1,24 +1,22 @@
 class GreatestCommonDivisor {
-    bool h = true;
+    int h = 366;
+    int i = 60;
     void main() {
-		int i=6;
-		int j=10;
-		print 'a';
-		for(i=0;i<10;i=i+1){
-        	print i;
-			if(i==5){
-				continue;
-			}
-			print i;
-        }
+        int x, y, z,w;
+        x = h;
+        y = i;
+        z = gcd(x, y);
+        w= gcd(12, 20);
+        print "z=",z,"\nw=",w,"\n";
     }
-	
+    
+    // Función que calcula el máximo común divisor
     int gcd(int a, int b) {
         if (b == 0) { return(a); }
         else {return( gcd(b,a%b) ); 
         }
     }
     void printhola(){
-        print 10;
+        print "hola.\n";
     }
 }
