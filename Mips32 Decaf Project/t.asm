@@ -1,51 +1,43 @@
 .data
-
-Str0: .asciiz "--------\n"
+h: .word 0
 Str1: .asciiz "\n"
-
+Str0: .asciiz "z="
 .text
 
 #class GreatestCommonDivisor{
+    # int h=366;
+        li $t0, 366
+        la $t1, h
+        sw $t0, 0($t1)
     jal main 
     j EndClass
 
     # main(){
     main:
         sw $ra, 0($sp)
-        addi $sp, $sp, -4
-            #10
-                li $t0, 10
-                add $a0, $zero, $t0
-                jal printInverse
+        addi $sp, $sp, -8
+        # int z;
 
-        #print "--------\n";
-            #"--------\n"
+        # z=gcd(x,60);
+            #x
+
+                add $a0, $zero, 
+            #60
+                li $t1, 60
+                add $a1, $zero, $t1
+            jal gcd
+            add $t0, $zero, $v0
+            sw $t0, 4($sp)
+
+        #print "z=",z,"\n";
+            #"z="
                 la $t0, Str0
                 move $a0, $t0
                 li $v0, 4
                 syscall
-
-            #5
-                li $t0, 5
-                add $a0, $zero, $t0
-                jal printNormal
-
-        #print getTrue(),"\n",getFalse(),"\n";
-            #getTrue()
-                jal getTrue
-                add $t0, $zero, $v0
-                move $a0, $t0
-                li $v0, 1
-                syscall
-            #"\n"
-                la $t0, Str1
-                move $a0, $t0
-                li $v0, 4
-                syscall
-            #getFalse()
-                jal getFalse
-                add $t0, $zero, $v0
-                move $a0, $t0
+            #z
+                lw $s0, 4($sp)
+                move $a0, $s0
                 li $v0, 1
                 syscall
             #"\n"
@@ -55,128 +47,57 @@ Str1: .asciiz "\n"
                 syscall
 
     Endmain:
-        addi $sp, $sp, 4
+        addi $sp, $sp, 8
         lw $ra, 0($sp)
         jr $ra
     #}
 
-    #int printInverse(int a){
-    printInverse:
+    #int gcd(int a,int b){
+    gcd:
         sw $ra, 0($sp)
         addi $sp, $sp, -12
         sw $a0, 4($sp)
-        # int i;
-
-        #for(i = a - 1; i >= 0; i = i - 1){
-            # i=a - 1;
-                lw $s0, 4($sp)
-                li $t0, 1
-                sub $t0, $s0, $t0
-                sw $t0, 8($sp)
-
-            Label0:
-                lw $s0, 8($sp)
-                li $t0, 0
-                slt $t0, $s0, $t0
-                nor $t0, $t0, $t0
-                addi $t0, $t0, 2
-                beq $t0, $zero, Label1
-                #print i,"\n";
-                    #i
-                        lw $s0, 8($sp)
-                        move $a0, $s0
-                        li $v0, 1
-                        syscall
-                    #"\n"
-                        la $t0, Str1
-                        move $a0, $t0
-                        li $v0, 4
-                        syscall
-
-                # i=i - 1;
-                    lw $s0, 8($sp)
-                    li $t0, 1
-                    sub $t0, $s0, $t0
-                    sw $t0, 8($sp)
-
-                j Label0
-        #}
-        Label1: 
-
-    EndprintInverse:
-        addi $sp, $sp, 12
-        lw $ra, 0($sp)
-        jr $ra
-    #}
-
-    #int printNormal(int a){
-    printNormal:
-        sw $ra, 0($sp)
-        addi $sp, $sp, -12
-        sw $a0, 4($sp)
-        # int j=0;
+        sw $a1, 8($sp)
+        #if(b == 0){
+            lw $s0, 8($sp)
             li $t0, 0
-            sw $t0, 8($sp)
+            beq $s0, $t0, Label0
+            li $t0, 0
+            j Label1
+            Label0:
+                li $t0, 1
+            Label1:
 
-        #while(j < a){
-            Label2:
-                lw $s0, 8($sp)
-                lw $s1, 4($sp)
-                slt $t0, $s0, $s1
-                beq $t0, $zero, Label3
-                #print j,"\n";
-                    #j
-                        lw $s0, 8($sp)
-                        move $a0, $s0
-                        li $v0, 1
-                        syscall
-                    #"\n"
-                        la $t0, Str1
-                        move $a0, $t0
-                        li $v0, 4
-                        syscall
-                # j=j + 1;
-                    lw $s0, 8($sp)
-                    li $t0, 1
-                    add $t0, $s0, $t0
-                    sw $t0, 8($sp)
+            add $t2, $zero, $zero
+            beq $t0, $t2, Label2
+            #return a;
+                lw $s0, 4($sp)
+                add $v0, $zero, $s0
+                j Endgcd
 
-                j Label2
+            j Label3
+        #}else{
+            Label2: 
+            #return gcd(b,a % b);
+                #b
+                    lw $s1, 8($sp)
+                    add $a0, $zero, $s1
+                #a % b
+                    lw $s1, 4($sp)
+                    lw $s2, 8($sp)
+                    div $s1, $s2
+                    mfhi $t3
+                    add $a1, $zero, $t3
+                jal gcd
+                add $t0, $zero, $v0
+                add $v0, $zero, $t0
+                j Endgcd
+
         #}
         Label3: 
 
-    EndprintNormal:
+    Endgcd:
         addi $sp, $sp, 12
-        lw $ra, 0($sp)
-        jr $ra
-    #}
-
-    #bool getTrue(){
-    getTrue:
-        sw $ra, 0($sp)
-        addi $sp, $sp, -4
-        #return True;
-            li $t0, 1
-            add $v0, $zero, $t0
-            j EndgetTrue
-
-    EndgetTrue:
-        addi $sp, $sp, 4
-        lw $ra, 0($sp)
-        jr $ra
-    #}
-
-    #bool getFalse(){
-    getFalse:
-        sw $ra, 0($sp)
-        addi $sp, $sp, -4
-        #return False;
-            li $t1, 0
-            add $v0, $zero, $t1
-            j EndgetFalse
-
-    EndgetFalse:
-        addi $sp, $sp, 4
         lw $ra, 0($sp)
         jr $ra
     #}

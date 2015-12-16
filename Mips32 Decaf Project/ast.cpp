@@ -17,7 +17,7 @@ map<string,string> StringConstants; //String Constants.
 map<char,string> CharConstants;     //Char Constants.
 string forAssignCode;
 string EndMethod;
-string MethodName;
+string CurrentMethod;
 
 string newTemp() {
     int i;
@@ -84,6 +84,8 @@ string GetIndentation(int i)
     return s;
 }
 
+//------------- PROGRAM GENERATE CODE AND VALIDATE SEMANTIC ----------------------------------------------
+
 string Program::generateCode() {
 
     stringstream ss;
@@ -109,6 +111,15 @@ string Program::generateCode() {
     "#}\n";
 
     return ss.str();
+}
+
+void Program::ValidateSemantic()
+{
+    MethodList::iterator it2=this->Methods->begin();
+    while(it2!=Methods->end()){
+        (*it2)->ValidateSemantic();
+        it2++;
+    }
 }
 
 //-------------  GENERATE CODE  EXPRESIONS----------------------------------------------
@@ -357,13 +368,13 @@ string ArrayExpr::generateCode(string &place, int i)
 string IdExpr::generateCode(string &place, int i)
 {
     stringstream ss;
-    Method *m=mTable[MethodName];
+    Method *m=mTable[CurrentMethod];
 
     if(m->LTable.find(id)!=m->LTable.end()){
         place = newSTemp();
         int offset=m->LTable[id].Offset;
         ss << GetIndentation(i)<<"lw " << place << ", " <<offset<<"($sp)";
-        this->type=sTable[id].type;
+        this->type=m->LTable[id].type;
 
     }else if (sTable.find(id) != sTable.end()) {
         place = newTemp();
@@ -449,6 +460,7 @@ string MethodExpr::generateCode(string& place, int i){
 
     return ss.str();
 }
+
 string ShiftLeftExpr::generateCode(string& place, int i){
     string place1, place2;
     string code1 = expr1->generateCode(place1,i);
@@ -613,50 +625,50 @@ string PrintStatement::generateCode(string label1, string label2, int i)
 
 string AssignStatement::generateCode(string label1, string label2, int i)
 {
-    Method* m=mTable[MethodName];
-    string place1;
-    string code = expr->generateCode(place1,i+1);
-    stringstream ss;
-    string place ="";
-    place=newTemp();
+    Method* m=mTable[CurrentMethod];
+        string place1;
+        string code = expr->generateCode(place1,i+1);
+        stringstream ss;
+        string place ="";
+        place=newTemp();
 
-    if(dim==0){
-        ss << GetIndentation(i)<<"# "<<id<<"="<<expr->toString()<<";"<<endl
-        <<code << endl;
-        if(m->LTable.find(id)!=m->LTable.end()){
-            int offset=m->LTable[id].Offset;
-            ss << GetIndentation(i+1)<<"sw " << place1 << ", " <<offset<<"($sp)" << endl;
+        if(dim==0){
+            ss << GetIndentation(i)<<"# "<<id<<"="<<expr->toString()<<";"<<endl
+            <<code << endl;
+            if(m->LTable.find(id)!=m->LTable.end()){
+                int offset=m->LTable[id].Offset;
+                ss << GetIndentation(i+1)<<"sw " << place1 << ", " <<offset<<"($sp)" << endl;
 
-        }else if (sTable.find(id) != sTable.end()) {
-            ss<<GetIndentation(i+1)<<"la " << place << ", " << id << endl <<
-                GetIndentation(i+1)<<"sw " << place1 << ", " << "0(" << place << ")" << endl;
+            }else if (sTable.find(id) != sTable.end()) {
+                ss<<GetIndentation(i+1)<<"la " << place << ", " << id << endl <<
+                    GetIndentation(i+1)<<"sw " << place1 << ", " << "0(" << place << ")" << endl;
+            }
+            releaseTemp(place1);
+        }else{
+            ss<<GetIndentation(i)<<"# "<<id<<"["<<dim->toString()<<"]="<<expr->toString()<<";"<<endl<<
+                code << endl;
+
+            releaseTemp(place1);
+            string DimCode;
+            string place2=newTemp();
+            string place3=newTemp();
+            string place4=newTemp();
+
+            DimCode=this->dim->generateCode(place2,i);
+            releaseTemp(place1);
+            releaseTemp(place2);
+            releaseTemp(place3);
+            releaseTemp(place4);
+
+            ss<<DimCode<<endl<<
+                GetIndentation(i)<<"la " << place3 << ", " << id << endl <<
+                GetIndentation(i)<<"add " <<place2<<", "<< place2 << ", " << place2 << endl <<
+                GetIndentation(i)<<"add " <<place2<<", "<< place2 << ", " << place2 << endl <<
+                GetIndentation(i)<<"add " <<place4<<", "<< place2 << ", " << place3 << endl <<
+                GetIndentation(i+1)<<"sw " << place1 << ", " << "0(" << place4 << ")" << endl;
         }
-        releaseTemp(place1);
-    }else{
-        ss<<GetIndentation(i)<<"# "<<id<<"["<<dim->toString()<<"]="<<expr->toString()<<";"<<endl<<
-            code << endl;
-
-        releaseTemp(place1);
-        string DimCode;
-        string place2=newTemp();
-        string place3=newTemp();
-        string place4=newTemp();
-
-        DimCode=this->dim->generateCode(place2,i);
-        releaseTemp(place1);
-        releaseTemp(place2);
-        releaseTemp(place3);
-        releaseTemp(place4);
-
-        ss<<DimCode<<endl<<
-            GetIndentation(i)<<"la " << place3 << ", " << id << endl <<
-            GetIndentation(i)<<"add " <<place2<<", "<< place2 << ", " << place2 << endl <<
-            GetIndentation(i)<<"add " <<place2<<", "<< place2 << ", " << place2 << endl <<
-            GetIndentation(i)<<"add " <<place4<<", "<< place2 << ", " << place3 << endl <<
-            GetIndentation(i+1)<<"sw " << place1 << ", " << "0(" << place4 << ")" << endl;
-    }
-    releaseTemp(place);
-    return ss.str();
+        releaseTemp(place);
+        return ss.str();
 }
 
 string IfStatement::generateCode(string label1, string label2, int i) {
@@ -717,7 +729,7 @@ string WhileStatement::generateCode(string label1, string label2, int i) {
         bcode+= s->generateCode(label1,label2,i+2);
         it++;
     }
-     
+
     ss<<GetIndentation(i)<<"#"<<this->toString()<<
         GetIndentation(i+1)<<label1 <<":\n"<<
         code <<endl<<
@@ -783,6 +795,7 @@ string ForStatement::generateCode(string label1, string label2, int i){
     forAssignCode=temp;
     return ss.str();
 }
+
 
 string ReturnStatement::generateCode(string label1, string label2, int i){
     stringstream ss;
@@ -853,16 +866,15 @@ string Declaration::generateCode(int i) {
         DeclItem *item=*it;
         VValue v;
         v.type=type;
-        sTable[item->id] =v;
         if(item->dimension>0){
-            cout << item->id << ": .word 0";
-            for(int c=1;c<item->dimension;c++){
-                cout<<",0";
-            }
-            cout<< endl;
+            v.isArray=true;
+            v.ArraySize=item->dimension;
         }else{
-            cout << item->id << ": .word 0" << endl;
+            v.isArray=false;
         }
+
+        sTable[item->id] =v;
+
         if(value!=0){
             code = this->value->generateCode(place1,i+1);
             place =newTemp();
@@ -894,7 +906,7 @@ string Declaration::generateInMethodCode(int i,int &offset)
     string place,code,place1;
     stringstream ss;
     DeclItemList::iterator it=ids.begin();
-    Method *m=mTable[MethodName];
+    Method *m=mTable[CurrentMethod];
 
     if(value==0){
         ss<< GetIndentation(i)<<"# "<<getStringFromType(type)<<" ";
@@ -928,10 +940,10 @@ string Declaration::generateInMethodCode(int i,int &offset)
 }
 
 string Method::generateCode(int i) {
-    string previous=MethodName;
+    string previous=CurrentMethod;
     string previousEnd=EndMethod;
     string parameters[]={"$a0","$a1","$a2","$a3"};
-    MethodName=this->id;
+    CurrentMethod=this->id;
     EndMethod="End"+this->id;
     stringstream ss;
     this->offset=GetOffset(params,declare);
@@ -974,7 +986,7 @@ string Method::generateCode(int i) {
         GetIndentation(i+1)<<"jr $ra\n"<<
         GetIndentation(i)<<"#}";
 
-    MethodName=previous;
+    CurrentMethod=previous;
     EndMethod=previousEnd;
     mTable[this->id]=this;
 
@@ -983,8 +995,141 @@ string Method::generateCode(int i) {
 
 void Param::generateCode(int offset)
 {
-    Method *m=mTable[MethodName];
+    Method *m=mTable[CurrentMethod];
     m->LTable[id].Offset=offset;
     m->LTable[id].type=this->type;
 }
 
+
+//--------------------------------------VALIDATE SEMANTIC--------------------------------------------------
+
+VarType MethodExpr::ValidateSemantic(){
+    return mTable[this->id]->type;
+}
+
+void ReturnStatement::ValidateSemantic(){
+    if(expr->ValidateSemantic()!=mTable[CurrentMethod]->type){
+        printf("Expected %s value in method %s.\n",getStringFromType(mTable[CurrentMethod]->type).c_str(),CurrentMethod.c_str());
+        exit(0);
+    }
+}
+
+void MethodStatement::ValidateSemantic(){
+    Method *m =mTable[this->id];
+    if(m->params.size()!=exprs.size()){
+        printf("Method %s expect %d parameters not %d.\n",this->id.c_str(),m->params.size(),exprs.size());
+        exit(0);
+    }
+    ParamList::iterator it=m->params.begin();
+    ExprList::iterator it2=exprs.begin();
+    while(it!=m->params.end()){
+        Param *p=*it;
+        p->ValidateSemantic(p->type,(*it2)->ValidateSemantic(),this->id);
+        it++;
+        it2++;
+    }
+}
+
+void AssignStatement::ValidateSemantic(){
+    Method *m=mTable[CurrentMethod];
+    if(m->LTable.find(id)!=m->LTable.end() && m->LTable.find(id)->second.type==expr->ValidateSemantic()){
+
+    }else if(sTable.find(id)!=sTable.end() && sTable.find(id)->second.type==expr->ValidateSemantic()){
+
+    }else{
+        printf("Id \"%s\" doesn't expect %s type.\n",id.c_str(),getStringFromType(expr->ValidateSemantic()).c_str());
+        exit(0);
+    }
+}
+
+void IfStatement::ValidateSemantic(){
+    if(cond->ValidateSemantic()!=BOOLEAN){
+        printf("If Condition must be Boolean.\n");
+        exit(0);
+    }
+    StatementList::iterator it=trueBlock.begin();
+    while(it!=trueBlock.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+    it=falseBlock.begin();
+    while(it!=falseBlock.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+}
+
+void WhileStatement::ValidateSemantic(){
+    if(cond->ValidateSemantic()!=BOOLEAN){
+        printf("While Condition must be Boolean.\n");
+        exit(0);
+    }
+    StatementList::iterator it=statementBlock.begin();
+    while(it!=statementBlock.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+}
+
+void ForStatement::ValidateSemantic(){
+    if(cond->ValidateSemantic()!=BOOLEAN){
+        printf("While Condition must be Boolean.\n");
+        exit(0);
+    }
+    StatementList::iterator it=assignStatement.begin();
+    while(it!=assignStatement.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+    it=finalAssignStatement.begin();
+    while(it!=finalAssignStatement.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+    it=statementBlock.begin();
+    while(it!=statementBlock.end()){
+        (*it)->ValidateSemantic();
+        it++;
+    }
+}
+
+void Declaration::ValidateSemantic(){
+    DeclItemList::iterator it=ids.begin();
+    while(it!=ids.end()){
+        if(sTable.find((*it)->id)!=sTable.end()){
+            printf("Variable %s already exist.\n",(*it)->id.c_str());
+            exit(0);
+        }
+    }
+}
+
+void Declaration::ValidateInMethodSemantic(){
+    DeclItemList::iterator it=ids.begin();
+    while(it!=ids.end()){
+        if(sTable.find((*it)->id)==sTable.end()){
+        }else if(mTable[CurrentMethod]->LTable.find((*it)->id)==mTable[CurrentMethod]->LTable.end()){
+        }else{
+            printf("Variable %s already exist.\n",(*it)->id.c_str());
+            exit(0);
+        }
+    }
+}
+
+void Param::ValidateSemantic(VarType paramType, VarType exprType, string id){
+    if(paramType!=exprType){
+        printf("Expected %s type in %s method call",getStringFromType(paramType).c_str(),id.c_str());
+        exit(0);
+    }
+}
+
+void Method::ValidateSemantic(){
+    string previous=CurrentMethod;
+    CurrentMethod=this->id;
+
+    StatementList::iterator it2=statementBlock.begin();
+    while(it2!=statementBlock.end()){
+        (*it2)->ValidateSemantic();
+        it2++;
+    }
+    CurrentMethod=previous;
+}

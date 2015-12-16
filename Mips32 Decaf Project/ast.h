@@ -31,6 +31,7 @@ using namespace std;
         return ss.str();                                \
     }
 
+
 enum VarType {
     INT, BOOLEAN, STRINGS, CHARACTER, FUNCTION, ARRAY,VOID
 };
@@ -171,6 +172,7 @@ public:
         return toStringHelper(tmp);
     }
     VarType type;
+    virtual VarType ValidateSemantic()=0;
 };
 
 typedef list<Expr*> ExprList;
@@ -194,6 +196,7 @@ public:
     }
 
     string generateCode(string &place, int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("<", 40)
 };
 
@@ -204,6 +207,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING(">", 40)
 };
 
@@ -214,6 +218,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("<=", 40)
 };
 
@@ -224,6 +229,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING(">=", 40)
 };
 
@@ -234,6 +240,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("!=", 30)
 };
 
@@ -244,6 +251,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("==", 30)
 };
 
@@ -254,6 +262,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("+", 70)
 };
 
@@ -264,6 +273,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("-", 70)
 };
 
@@ -274,6 +284,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("*", 80)
 };
 
@@ -284,6 +295,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("/", 80)
 };
 
@@ -296,6 +308,7 @@ public:
 
     Expr *expr;
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     string toStringHelper(int &prec){ prec = 100; return "-"+expr->toString(); }
 };
 
@@ -309,6 +322,7 @@ public:
     Expr *expr;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec){ prec = 90; return "!"+expr->toString();}
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class OrExpr : public BinaryExpr {
@@ -318,6 +332,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("||", 10)
 };
 
@@ -328,6 +343,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("||", 20)
 };
 
@@ -338,6 +354,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("<<", 50)
 };
 
@@ -348,6 +365,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING("rot", 50)
 };
 
@@ -358,6 +376,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
      IMPLEMENT_BINARY_EXPR_TOSTRING("%", 60)
 };
 
@@ -368,6 +387,7 @@ public:
     }
 
     string generateCode(string &place,int i);
+    VarType ValidateSemantic(){return this->type;}
     IMPLEMENT_BINARY_EXPR_TOSTRING(">>", 50)
 };
 
@@ -382,6 +402,7 @@ public:
     VValue value;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec) { prec = 110; return ConvertToString(value.IntValue()); }
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class BoolExpr : public Expr {
@@ -395,6 +416,7 @@ public:
     VValue value;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec){ prec = 110; return value.BoolValue()?"True":"False";}
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class IdExpr : public Expr {
@@ -407,6 +429,7 @@ public:
     string id;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec) { prec = 110; return id; }
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class ArrayExpr : public Expr {
@@ -421,6 +444,7 @@ public:
     Expr* dim;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec) { prec = 110; return id+"["+dim->toString()+"]"; }
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class StrExpr : public Expr {
@@ -433,6 +457,7 @@ public:
     string val;
     string generateCode(string &place,int i);
     string toStringHelper(int &prec){ prec = 110; return "\""+val+"\""; }
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class CharExpr : public Expr {
@@ -469,6 +494,7 @@ public:
         }
 
     }
+    VarType ValidateSemantic(){return this->type;}
 };
 
 class MethodExpr : public Expr {
@@ -498,6 +524,7 @@ public:
         result+=")";
         return result;
     }
+    VarType ValidateSemantic();
 };
 
 enum StatementKind {
@@ -518,6 +545,7 @@ public:
     virtual StatementKind getKind() = 0;
     virtual string generateCode (string label1,string label2,int i) = 0;
     virtual string toString()=0;
+    virtual void ValidateSemantic()=0;
 };
 
 typedef list<Statement*> StatementList;
@@ -535,6 +563,7 @@ public:
     string generateCode (string label1,string label2,int i);
     Expr* expr;
     string toString(){ return "return "+expr->toString()+";";}
+    void ValidateSemantic();
 };
 
 class ContinueStatement : public Statement {
@@ -548,6 +577,7 @@ public:
     }
     string generateCode (string label1,string label2,int i);
     string toString(){return "continue;";}
+    void ValidateSemantic(){}
 };
 
 class BreakStatement : public Statement {
@@ -561,6 +591,7 @@ public:
     }
     string generateCode (string label1,string label2,int i);
     string toString(){return "break;";}
+    void ValidateSemantic(){}
 };
 
 class MethodStatement : public Statement {
@@ -593,6 +624,7 @@ public:
 
         return id+"("+exp+")";
     }
+    void ValidateSemantic();
 };
 
 class PrintStatement : public Statement {
@@ -621,6 +653,7 @@ public:
         }
         return "print "+exp+";";
     }
+    void ValidateSemantic(){}
 };
 
 class AssignStatement : public Statement {
@@ -648,6 +681,7 @@ public:
         }
         return exp;
     }
+    void ValidateSemantic();
 };
 
 class IfStatement : public Statement {
@@ -667,6 +701,7 @@ public:
     list<Statement *>trueBlock;
     list<Statement *>falseBlock;
     string toString(){return "if("+cond->toString()+"){\n";}
+    void ValidateSemantic();
 };
 
 class WhileStatement : public Statement {
@@ -684,6 +719,7 @@ public:
     Expr *cond;
     list<Statement *>statementBlock;
     string toString(){return "while("+cond->toString()+"){\n";}
+    void ValidateSemantic();
 };
 
 class ForStatement : public Statement {
@@ -727,9 +763,10 @@ public:
             }
             it2++;
         }
-
         return "for("+assign1+"; "+cond->toString()+"; "+assign2+"){\n";
     }
+
+    void ValidateSemantic();
 };
 
 class Declaration {
@@ -745,6 +782,8 @@ public:
     DeclItemList ids;
     VarType type;
     Expr* value;
+    void ValidateSemantic();
+    void ValidateInMethodSemantic();
 };
 
 class Param {
@@ -760,6 +799,7 @@ public:
     string toString(){
         return getStringFromType(this->type)+" "+this->id;
     }
+    void ValidateSemantic(VarType paramType,VarType exprType,string id);
 };
 
 typedef list<Param*> ParamList;
@@ -801,6 +841,8 @@ public:
         }
         return getStringFromType(type)+" "+id+"("+parameters+"){";
     }
+
+    void ValidateSemantic();
 };
 typedef list<Method*> MethodList;
 
@@ -817,6 +859,7 @@ public:
     MethodList *Methods;
     DeclList *Variables;
     string toString(){return "class "+id+"{";}
+    void ValidateSemantic();
 };
 
 typedef list<AssignStatement*> AssignList;
@@ -825,5 +868,5 @@ extern map<string, VValue> sTable;
 extern map<string, Method*> mTable;
 typedef map<string, Method*> AcVariables;
 extern VValue returnValue;
-extern string MethodName;
+extern string CurrentMethod;
 #endif
